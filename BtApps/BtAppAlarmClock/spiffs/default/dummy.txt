@@ -1,0 +1,17 @@
+{
+    "repeatingAlarms" : [
+       {"e":true, "h": 5, "m":30, "days":["wed", "thu", "fri"]},
+       {"e":true, "h": 6, "m":45, "days":["mon", "tue"]},
+       {"e":true, "h":15, "m": 5, "days":["mon"]},
+       {"e":true, "h":15, "m":15, "days":["mon"]},
+       {"e":true, "h":15, "m":20, "days":["mon"]},
+       {"e":true, "h":15, "m":25, "days":["mon"]},
+       {"e":true, "h":15, "m":30, "days":["mon"]},
+       {"e":true, "h":15, "m":10, "days":["mon"]},
+       {"e":true, "h":15, "m":40, "days":["mon"]},
+       {"e":true, "h":18, "m":50, "days":["mon"]}
+    ],
+    "onceAlarms" : [
+        {"e":true, "h": 8, "m":0, "D":25, "M":1, "Y":2020}
+    ]
+}

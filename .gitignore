@@ -1,0 +1,11 @@
+.config
+*.o
+*.pyc
+
+sdkconfig.old
+
+# ESP-IDF default build directory name
+build
+
+# MacOS directory files
+.DS_Store

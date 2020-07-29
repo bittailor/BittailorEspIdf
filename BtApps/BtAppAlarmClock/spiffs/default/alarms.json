@@ -1,0 +1,8 @@
+{
+    "repeatingAlarms" : [
+       {"e":true, "h": 5, "m":30, "days":["wed", "thu", "fri"]},
+       {"e":true, "h": 6, "m":40, "days":["mon", "tue"]}
+    ],
+    "onceAlarms" : [
+    ]
+}

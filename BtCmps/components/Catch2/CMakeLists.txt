@@ -1,0 +1,9 @@
+idf_component_register(
+	INCLUDE_DIRS "."
+)
+
+target_compile_definitions(${COMPONENT_LIB} INTERFACE
+    CATCH_CONFIG_NO_POSIX_SIGNALS 
+    CATCH_CONFIG_NO_CPP11_TO_STRING 
+    CATCH_CONFIG_ENABLE_ALL_STRINGMAKERS
+)

@@ -20,13 +20,14 @@ bool matches(const char *sub, const char *topic)
 
    bool result = false;
 
+   if(!sub || sub[0] == 0){
+      throw std::invalid_argument("subscription can not be empty");
+   }
    if(!sub || !topic || sub[0] == 0 || topic[0] == 0){
-      throw std::invalid_argument("");
+      throw std::invalid_argument("topic can not be empty");
    }
 
-   if((sub[0] == '$' && topic[0] != '$')
-         || (topic[0] == '$' && sub[0] != '$')){
-
+   if((sub[0] == '$' && topic[0] != '$') || (topic[0] == '$' && sub[0] != '$')){
       return result;
    }
 
@@ -34,17 +35,17 @@ bool matches(const char *sub, const char *topic)
 
    while(sub[0] != 0){
       if(topic[0] == '+' || topic[0] == '#'){
-         throw std::invalid_argument("");
+         throw std::invalid_argument("topic can not contain wildcards");
       }
       if(sub[0] != topic[0] || topic[0] == 0){ /* Check for wildcard matches */
          if(sub[0] == '+'){
             /* Check for bad "+foo" or "a/+foo" subscription */
             if(spos > 0 && sub[-1] != '/'){
-               throw std::invalid_argument("");
+               throw std::invalid_argument("bad + wildcards in subscription ('+foo' or 'a/+foo')");
             }
             /* Check for bad "foo+" or "foo+/a" subscription */
             if(sub[1] != 0 && sub[1] != '/'){
-               throw std::invalid_argument("");
+               throw std::invalid_argument("bad + wildcards in subscription ('foo+' or 'foo+/a')");
             }
             spos++;
             sub++;
@@ -61,15 +62,15 @@ bool matches(const char *sub, const char *topic)
          }else if(sub[0] == '#'){
             /* Check for bad "foo#" subscription */
             if(spos > 0 && sub[-1] != '/'){
-               throw std::invalid_argument("");
+               throw std::invalid_argument("bad # wildcards in subscription ('foo#')");
             }
             /* Check for # not the final character of the sub, e.g. "#foo" */
             if(sub[1] != 0){
-               throw std::invalid_argument("");
+               throw std::invalid_argument("bad # wildcards in subscription ('#foo')");
             }else{
                while(topic[0] != 0){
                   if(topic[0] == '+' || topic[0] == '#'){
-                     throw std::invalid_argument("");
+                     throw std::invalid_argument("topic can not contain wildcards");
                   }
                   topic++;
                }
@@ -91,7 +92,7 @@ bool matches(const char *sub, const char *topic)
             /* There is no match at this point, but is the sub invalid? */
             while(sub[0] != 0){
                if(sub[0] == '#' && sub[1] != 0){
-                  throw std::invalid_argument("");
+                  throw std::invalid_argument("bad # wildcards in subscription ('#foo')");
                }
                spos++;
                sub++;
@@ -119,7 +120,7 @@ bool matches(const char *sub, const char *topic)
             return result;
          }else if(topic[0] == 0 && sub[0] == '+' && sub[1] == 0){
             if(spos > 0 && sub[-1] != '/'){
-               throw std::invalid_argument("");
+               throw std::invalid_argument("bad + wildcards in subscription ('+foo' or 'a/+foo')");
             }
             spos++;
             sub++;
@@ -133,7 +134,7 @@ bool matches(const char *sub, const char *topic)
    }
    while(topic[0] != 0){
       if(topic[0] == '+' || topic[0] == '#'){
-         throw std::invalid_argument("");
+         throw std::invalid_argument("topic can not contain wildcards");
       }
       topic++;
    }
@@ -156,6 +157,9 @@ std::vector<std::string> split(const std::string& pTopic)
 }
 
 std::string join(const std::vector<std::string>& pParts) {
+   if(pParts.empty()) {
+      return {};
+   }
    std::ostringstream stream;
    for(size_t i = 0 ; i < pParts.size()-1 ; i++) {
       stream << pParts[i] << TOPIC_SEPARATOR;

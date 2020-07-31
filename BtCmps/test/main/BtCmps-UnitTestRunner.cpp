@@ -55,11 +55,15 @@ extern "C" void app_main(void)
       std::cout << "!!!!!!!!!!!!" << std::endl;
       std::cout << "!! ERROR  !!" << std::endl;
       std::cout << "!!!!!!!!!!!!" << std::endl;
-      return;
+   } else {
+      const char* argv[] = {"firmware"/*, "--success"*/};
+      catchMain(sizeof(argv)/sizeof(argv[0]), argv);
    }
 
-	const char* argv[] = {"firmware"/*, "--success"*/};
-	catchMain(sizeof(argv)/sizeof(argv[0]), argv);
+   std::cout << std::endl << std::endl;
+   std::cout << "<!-*END-OF-TEST-RUN*-!>" << std::endl;
+   std::cout << std::endl;
+
 }
 
 

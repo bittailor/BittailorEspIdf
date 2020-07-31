@@ -9,3 +9,5 @@ build
 
 # MacOS directory files
 .DS_Store
+
+.idea

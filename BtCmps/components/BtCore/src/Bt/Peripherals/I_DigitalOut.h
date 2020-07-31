@@ -15,6 +15,7 @@ class I_DigitalOut {
       virtual ~I_DigitalOut() {}
       
       virtual void write(bool pValue) = 0;
+      virtual bool value() = 0;
 };
 
 } // namespace Peripherals

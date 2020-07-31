@@ -18,6 +18,7 @@
 #include <Bt/Events/Events.h>
 #include <Bt/Events/DefaultEventLoop.h>
 #include <Bt/Network/WiFiController.h>
+#include <Bt/Peripherals/DigitalOut.h>
 #include <Bt/Protocols/SntpController.h>
 #include <Bt/Protocols/MqttController.h>
 #include <Bt/Storage/NvsRepository.h>
@@ -120,6 +121,12 @@ void alarmClockMain(void* pContext)
 
       // dumpTaskInfo();
 
+   });
+
+   Bt::Peripherals::DigitalOut testOutput(GPIO_NUM_27);
+
+   Bt::Events::Subscription<Bt::AlarmClock::I_Clock::SecondUpdate> secondUpdateSubscription(mainExecutionContext, [&clock, &testOutput](auto pEvent) {
+      testOutput.write(!testOutput.value());
    });
 
    ESP_LOGI(TAG, "Run:");

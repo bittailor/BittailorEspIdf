@@ -1,5 +1,14 @@
+require 'rubygems'
+begin
+    require 'serialport'
+rescue LoadError
+    puts 'gem serialport not found'
+end
+
+
 
 port = '/dev/cu.usbserial-0001'
+baudrate = 921600
 
 
 build_target_folders = ['BtApps/BtAppAlarmClock', 'BtCmps/test', 'BtCmps']
@@ -21,7 +30,26 @@ namespace :test do
         test_target_folders.each do |folder| 
             Dir.chdir(folder) do  
                 sh "pwd"  
-                idf_sh "idf.py -p #{port} flash monitor"
+                #idf_sh "idf.py -p #{port} flash monitor"
+                #idf_sh "idf.py -p #{port} -b   #{115200*8} flash"
+                idf_sh "idf.py -p #{port} -b #{baudrate} flash"
+                puts "start watching serial"
+                failed = false;
+                SerialPort.open(port, 115200) do |serial|
+                    loop do
+                        line = serial.readline()
+                        puts "s> " + line
+                        begin
+                            string = line.strip
+                            #puts ">#{string}< #{string == '!! FAILED !!'}"
+                            break if string == '<!-*END-OF-TEST-RUN*-!>'
+                            failed = true if string == '!! ERROR  !!'
+                            failed = true if string == '!! FAILED !!'
+                        rescue                
+                        end    
+                    end
+                end 
+                fail if failed
             end
         end
     end
@@ -79,9 +107,15 @@ task :clean do
 
 end
 
+task :conf do 
+    Dir.chdir(flash_folder) do    
+        idf_sh "idf.py menuconfig"
+    end
+end
+
 task :flash do 
     Dir.chdir(flash_folder) do    
-        idf_sh "idf.py -p #{port} flash monitor"
+        idf_sh "idf.py -p #{port} -b #{baudrate} flash monitor"
     end
 end
 

@@ -14,6 +14,7 @@ idf_component_register(
 		"src/Bt/Events/Events.cpp"
 		"src/Bt/Peripherals/RgbLed.cpp"
 		"src/Bt/Protocols/MqttSubscription.cpp"
+		"src/Bt/Protocols/Mqtt/Mqtt.cpp"
 	INCLUDE_DIRS "src"
 	REQUIRES Date
 )

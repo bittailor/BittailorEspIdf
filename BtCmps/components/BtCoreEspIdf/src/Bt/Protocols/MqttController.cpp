@@ -9,140 +9,12 @@
 #include <stdexcept>
 #include <vector>
 
+#include "Bt/Protocols/Mqtt/Mqtt.h"
 #include "Bt/Protocols/MqttSubscription.h"
 #include "Bt/Protocols/Tag.h"
 
 namespace Bt {
 namespace Protocols {
-namespace {
-
-bool topicMatchesSubscription(const char *sub, const char *topic)
-{
-   size_t spos;
-
-   bool result = false;
-
-   if(!sub || !topic || sub[0] == 0 || topic[0] == 0){
-      throw std::invalid_argument("");
-   }
-
-   if((sub[0] == '$' && topic[0] != '$')
-         || (topic[0] == '$' && sub[0] != '$')){
-
-      return result;
-   }
-
-   spos = 0;
-
-   while(sub[0] != 0){
-      if(topic[0] == '+' || topic[0] == '#'){
-         throw std::invalid_argument("");
-      }
-      if(sub[0] != topic[0] || topic[0] == 0){ /* Check for wildcard matches */
-         if(sub[0] == '+'){
-            /* Check for bad "+foo" or "a/+foo" subscription */
-            if(spos > 0 && sub[-1] != '/'){
-               throw std::invalid_argument("");
-            }
-            /* Check for bad "foo+" or "foo+/a" subscription */
-            if(sub[1] != 0 && sub[1] != '/'){
-               throw std::invalid_argument("");
-            }
-            spos++;
-            sub++;
-            while(topic[0] != 0 && topic[0] != '/'){
-               if(topic[0] == '+' || topic[0] == '#'){
-                  throw std::invalid_argument("");
-               }
-               topic++;
-            }
-            if(topic[0] == 0 && sub[0] == 0){
-               result = true;
-               return result;
-            }
-         }else if(sub[0] == '#'){
-            /* Check for bad "foo#" subscription */
-            if(spos > 0 && sub[-1] != '/'){
-               throw std::invalid_argument("");
-            }
-            /* Check for # not the final character of the sub, e.g. "#foo" */
-            if(sub[1] != 0){
-               throw std::invalid_argument("");
-            }else{
-               while(topic[0] != 0){
-                  if(topic[0] == '+' || topic[0] == '#'){
-                     throw std::invalid_argument("");
-                  }
-                  topic++;
-               }
-               result = true;
-               return result;
-            }
-         }else{
-            /* Check for e.g. foo/bar matching foo/+/# */
-            if(topic[0] == 0
-                  && spos > 0
-                  && sub[-1] == '+'
-                  && sub[0] == '/'
-                  && sub[1] == '#')
-            {
-               result = true;
-               return result;
-            }
-
-            /* There is no match at this point, but is the sub invalid? */
-            while(sub[0] != 0){
-               if(sub[0] == '#' && sub[1] != 0){
-                  throw std::invalid_argument("");
-               }
-               spos++;
-               sub++;
-            }
-
-            /* Valid input, but no match */
-            return result;
-         }
-      }else{
-         /* sub[spos] == topic[tpos] */
-         if(topic[1] == 0){
-            /* Check for e.g. foo matching foo/# */
-            if(sub[1] == '/'
-                  && sub[2] == '#'
-                  && sub[3] == 0){
-               result = true;
-               return result;
-            }
-         }
-         spos++;
-         sub++;
-         topic++;
-         if(sub[0] == 0 && topic[0] == 0){
-            result = true;
-            return result;
-         }else if(topic[0] == 0 && sub[0] == '+' && sub[1] == 0){
-            if(spos > 0 && sub[-1] != '/'){
-               throw std::invalid_argument("");
-            }
-            spos++;
-            sub++;
-            result = true;
-            return result;
-         }
-      }
-   }
-   if((topic[0] != 0 || sub[0] != 0)){
-      result = false;
-   }
-   while(topic[0] != 0){
-      if(topic[0] == '+' || topic[0] == '#'){
-         throw std::invalid_argument("");
-      }
-      topic++;
-   }
-
-   return result;
-}
-}
 
 void MqttController::mqttEventHandler(void* pHandlerArg, esp_event_base_t pEventBase, int32_t pEventId, void* pEventData) {
    if(pHandlerArg == nullptr) {
@@ -210,8 +82,8 @@ void MqttController::onData(esp_mqtt_event_handle_t pEvent) {
    std::copy_if(std::begin(mSubscribed),
                 std::end(mSubscribed),
                 std::back_inserter(macthingSubscriptions),
-                [&topic](const MqttSubscription* s) {
-                     return topicMatchesSubscription(s->topic().c_str(), topic.c_str());
+                [&topic](const MqttSubscription* subscription) {
+                     return Mqtt::topicMatchesSubscription(subscription->topic().c_str(), topic.c_str());
                 }
    );
 

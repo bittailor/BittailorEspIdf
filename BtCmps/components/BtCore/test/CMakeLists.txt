@@ -9,6 +9,7 @@ idf_component_register(
 		"Bt/Concurrency/WorkerExecutionContextTest.cpp"
 		"Bt/Concurrency/CountingLatchTest.cpp"
 		"Bt/Concurrency/SchedulingExecutionContextBaseTest.cpp"
+		"Bt/Protocols/Mqtt/MqttTest.cpp"
 	INCLUDE_DIRS "."
 	REQUIRES Catch2 BtCore BtCoreMocks
 )

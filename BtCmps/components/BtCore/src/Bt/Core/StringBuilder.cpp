@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#include <esp_log.h>
+#include "Bt/Core/Logging.h"
 
 namespace Bt {
 namespace Core {

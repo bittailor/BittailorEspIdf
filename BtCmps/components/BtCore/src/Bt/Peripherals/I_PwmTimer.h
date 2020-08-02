@@ -1,26 +1,25 @@
 //*************************************************************************************************
 //
-//  BITTAILOR.CH  -  Bt::Peripherals::I_PwmOut
+//  BITTAILOR.CH  -  Bt::Peripherals::I_PwmTimer
 //
 //*************************************************************************************************
 
-#ifndef INC__Bt_Peripherals_I_PwmOut__h
-#define INC__Bt_Peripherals_I_PwmOut__h
+#ifndef INC__Bt_Peripherals_I_PwmTimer__h
+#define INC__Bt_Peripherals_I_PwmTimer__h
 
-#include <stdint.h>
+#include <cstdint>
 
 namespace Bt {
 namespace Peripherals {
 
-class I_PwmOut {
+class I_PwmTimer {
    public:
-      virtual ~I_PwmOut() {}
+      virtual ~I_PwmTimer() {}
 
-      virtual void write(uint32_t pDuty) = 0;
+      virtual void configure(uint32_t pFrequency) = 0;
 };
 
 } // namespace Peripherals
 } // namespace Bt
 
-#endif // INC__Bt_Peripherals_I_PwmOut__h
-
+#endif // INC__Bt_Peripherals_I_PwmTimer__h

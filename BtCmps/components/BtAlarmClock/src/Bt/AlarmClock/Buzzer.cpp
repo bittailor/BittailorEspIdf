@@ -15,8 +15,8 @@ namespace {
    constexpr uint32_t cDuty = Core::ConstMath::pow(2, cDutyResolutionInBits-1); 
 }
 
-Buzzer::Buzzer(Peripherals::I_PwmOut& pPwmOut)
-: mPwmOut(pPwmOut), mState(false) {
+Buzzer::Buzzer(Peripherals::I_PwmTimer& pPwmTimer, Peripherals::I_PwmOut& pPwmOut)
+: mPwmTimer(pPwmTimer), mPwmOut(pPwmOut), mState(false) {
 
 }
 
@@ -30,7 +30,7 @@ void Buzzer::state(bool pState) {
 }
 
 void Buzzer::configure(double pFrequency) {
-   mPwmOut.configure(pFrequency, cDutyResolutionInBits);
+   mPwmTimer.configure(pFrequency);
 }
 
 } // namespace AlarmClock

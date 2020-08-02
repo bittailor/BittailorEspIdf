@@ -19,13 +19,20 @@
 #include <Bt/Events/DefaultEventLoop.h>
 #include <Bt/Network/WiFiController.h>
 #include <Bt/Peripherals/DigitalOut.h>
+#include <Bt/Peripherals/InterruptPushButton.h>
+#include <Bt/Peripherals/PwmOut.h>
+#include <Bt/Peripherals/RgbLed.h>
 #include <Bt/Protocols/SntpController.h>
 #include <Bt/Protocols/MqttController.h>
 #include <Bt/Storage/NvsRepository.h>
 #include <Bt/Storage/VirtualFilesystem.h>
 
+#include <Bt/AlarmClock/AlarmActor.h>
+#include <Bt/AlarmClock/AlarmController.h>
+#include <Bt/AlarmClock/Buzzer.h>
 #include <Bt/AlarmClock/Clock.h>
 #include <Bt/AlarmClock/ConfigurationController.h>
+#include <Bt/AlarmClock/DisplayBacklight.h>
 #include <Bt/AlarmClock/MqttConfigurationConnector.h>
 
 constexpr const char* TAG = "BtAlarmClockApp";
@@ -86,9 +93,40 @@ void alarmClockMain(void* pContext)
 
    Bt::AlarmClock::Clock clock(mainExecutionContext, time, timezone);
 
+   Bt::Peripherals::PwmTimer buzzerPwmTimer(LEDC_TIMER_0, LEDC_HIGH_SPEED_MODE, 4, LEDC_TIMER_16_BIT);
+   Bt::Peripherals::PwmOut buzzerPwm(buzzerPwmTimer, LEDC_CHANNEL_0, GPIO_NUM_4);
+   Bt::AlarmClock::Buzzer buzzer(buzzerPwmTimer, buzzerPwm);
+
+   Bt::Peripherals::PwmTimer ledsPwmTimer(LEDC_TIMER_1, LEDC_HIGH_SPEED_MODE, 12000, LEDC_TIMER_8_BIT);
+   Bt::Peripherals::PwmOut red(ledsPwmTimer, LEDC_CHANNEL_1, GPIO_NUM_33);
+   Bt::Peripherals::PwmOut green(ledsPwmTimer, LEDC_CHANNEL_2, GPIO_NUM_32);
+   Bt::Peripherals::PwmOut blue(ledsPwmTimer, LEDC_CHANNEL_3, GPIO_NUM_22);
+   Bt::Peripherals::RgbLed rgbLed(red, green, blue, true);
+   Bt::AlarmClock::DisplayBacklight displayBacklight(mainExecutionContext, rgbLed);
+
+
+   Bt::AlarmClock::AlarmActor alarmActor(mainExecutionContext, buzzer);
+   Bt::AlarmClock::AlarmController sAlarmController(mainExecutionContext, time, timezone, alarmActor);
+
    Bt::AlarmClock::ConfigurationController configurationController;
    Bt::AlarmClock::MqttConfigurationConnector mqttConfigurationConnector(mainExecutionContext, configurationController,mqttController);
 
+   Bt::Peripherals::InterruptPushButton resetAlarm(mainExecutionContext,
+                                                   GPIO_NUM_16,
+                                                   [&alarmActor](auto pEvent) {
+      ESP_LOGI(TAG, "ResetAlarm => %d", Bt::Core::asInteger(pEvent));
+      if (pEvent == Bt::Peripherals::InterruptPushButton::Event::PRESSED) {
+         alarmActor.stoppPressed();
+      }
+   });
+
+   Bt::Peripherals::InterruptPushButton blueButton(mainExecutionContext,
+                                                   GPIO_NUM_17,
+                                                   [&displayBacklight](auto pEvent) {
+      if (pEvent == Bt::Peripherals::InterruptPushButton::Event::PRESSED) {
+         displayBacklight.on();
+      }
+   });
 
 
    Bt::Events::Subscription<Bt::AlarmClock::I_Clock::MinuteUpdate> minuteUpdateSubscription(mainExecutionContext, [&clock, &mqttController](auto pEvent) {
@@ -121,12 +159,6 @@ void alarmClockMain(void* pContext)
 
       // dumpTaskInfo();
 
-   });
-
-   Bt::Peripherals::DigitalOut testOutput(GPIO_NUM_27);
-
-   Bt::Events::Subscription<Bt::AlarmClock::I_Clock::SecondUpdate> secondUpdateSubscription(mainExecutionContext, [&clock, &testOutput](auto pEvent) {
-      testOutput.write(!testOutput.value());
    });
 
    ESP_LOGI(TAG, "Run:");

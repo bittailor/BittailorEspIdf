@@ -6,8 +6,8 @@ rescue LoadError
 end
 
 
-
-port = '/dev/cu.usbserial-0001'
+port = '/dev/cu.usbserial-1420'
+#port = '/dev/cu.usbserial-0001'
 baudrate = 921600
 
 

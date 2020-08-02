@@ -24,7 +24,6 @@ class RgbLed : public I_RgbLed
       RgbLed& operator=(const RgbLed&) = delete;
       ~RgbLed();
 
-      void begin();
 
       virtual void setHue(uint8_t pHue, uint8_t pBrightness) override;
       virtual void off() override;

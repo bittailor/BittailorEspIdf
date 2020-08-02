@@ -28,5 +28,20 @@ const char* pathToFileName(const char* pPath);
 
 #endif
 
+#include <type_traits>
+
+namespace Bt {
+namespace Core {
+
+template <typename Enumeration>
+auto asInteger(Enumeration const value) -> typename std::underlying_type<Enumeration>::type
+{
+   return static_cast<typename std::underlying_type<Enumeration>::type>(value);
+}
+
+} // namespace Core
+} // namespace Bt
+
+
 #endif // INC__Bt_Core_Logging__h
 

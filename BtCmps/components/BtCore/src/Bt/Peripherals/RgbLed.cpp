@@ -13,6 +13,7 @@ namespace Peripherals {
 
 RgbLed::RgbLed(I_PwmOut& pRed, I_PwmOut& pGreen, I_PwmOut& pBlue, bool pCommonAnode)
 : mCommonAnode(pCommonAnode), mLeds{&pRed, &pGreen, &pBlue}, mValues{value(0), value(0) ,value(0)}  {
+   off();
 }
 
 RgbLed::~RgbLed() {
@@ -74,14 +75,6 @@ void RgbLed::off() {
    for (uint32_t& v : mValues)
    {
       v = value(0);
-   }
-   writeOut();
-}
-
-void RgbLed::begin() {
-   for (I_PwmOut* led : mLeds)
-   {
-      led->configure(12000,8);
    }
    writeOut();
 }

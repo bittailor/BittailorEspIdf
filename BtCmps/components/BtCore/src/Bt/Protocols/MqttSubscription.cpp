@@ -21,7 +21,6 @@ MqttSubscription::~MqttSubscription() {
 void MqttSubscription::onMessage(std::shared_ptr<MqttMessage> pMessage) {
    if(mCallback) {
       mExecutionContext.call([this,pMessage](){mCallback(pMessage);});
-      ;
    }
 }
 

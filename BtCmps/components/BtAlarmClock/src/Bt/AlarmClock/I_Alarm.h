@@ -12,7 +12,7 @@ namespace AlarmClock {
 
 class I_Alarm {
    public:
-      static const uint32_t cMaxDelayInMinutesToStillTriggerAlarm = 30;
+      constexpr static const uint32_t cMaxDelayInMinutesToStillTriggerAlarm = 30;
 
       struct Check {bool mTrigger; bool mKeep;};
 

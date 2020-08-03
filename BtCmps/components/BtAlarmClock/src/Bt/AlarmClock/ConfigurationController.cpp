@@ -25,7 +25,7 @@ ConfigurationController::~ConfigurationController() {
 
 ConfigurationController& ConfigurationController::add(const std::string& pKey, Handler pHandler, bool pImmediateApply) {
    mHandlers.insert({pKey,pHandler});
-   if(true) {
+   if(pImmediateApply) {
       if(!configure(pKey)) {
          ESP_LOGE(TAG, "immediate configuration failed for %s", pKey.c_str());   
       }

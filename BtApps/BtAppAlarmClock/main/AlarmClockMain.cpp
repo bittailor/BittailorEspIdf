@@ -106,13 +106,12 @@ void alarmClockMain(void* pContext)
 
 
    Bt::AlarmClock::AlarmActor alarmActor(mainExecutionContext, buzzer);
-   Bt::AlarmClock::AlarmController sAlarmController(mainExecutionContext, time, timezone, alarmActor);
+   Bt::AlarmClock::AlarmController alarmController(mainExecutionContext, time, timezone, alarmActor);
 
    Bt::AlarmClock::ConfigurationController configurationController;
    Bt::AlarmClock::MqttConfigurationConnector mqttConfigurationConnector(mainExecutionContext, configurationController,mqttController);
 
-   Bt::Peripherals::InterruptPushButton resetAlarm(mainExecutionContext,
-                                                   GPIO_NUM_16,
+   Bt::Peripherals::InterruptPushButton resetAlarm(mainExecutionContext, GPIO_NUM_16,
                                                    [&alarmActor](auto pEvent) {
       ESP_LOGI(TAG, "ResetAlarm => %d", Bt::Core::asInteger(pEvent));
       if (pEvent == Bt::Peripherals::InterruptPushButton::Event::PRESSED) {
@@ -120,14 +119,49 @@ void alarmClockMain(void* pContext)
       }
    });
 
-   Bt::Peripherals::InterruptPushButton blueButton(mainExecutionContext,
-                                                   GPIO_NUM_17,
+   Bt::Peripherals::InterruptPushButton blueButton(mainExecutionContext,GPIO_NUM_17,
                                                    [&displayBacklight](auto pEvent) {
       if (pEvent == Bt::Peripherals::InterruptPushButton::Event::PRESSED) {
          displayBacklight.on();
       }
    });
 
+   configurationController
+      .add("alarms", [&alarmController](JsonVariant& pJson) {
+         if (!alarmController.configure(pJson)) {
+            return std::make_tuple(false, "invalid body");
+         }
+         return std::make_tuple(true, "ok");
+      })
+      .add("buzzer", [&buzzer](JsonVariant& pJson) {
+         JsonObject buzzerConfiguration = pJson.as<JsonObject>();
+         JsonVariant f = buzzerConfiguration["frequency"];
+         if (f.is<double>()) {
+            buzzer.configure(f.as<double>());
+            return std::make_tuple(true, "ok");
+         }
+         return std::make_tuple(false, "invalid body");
+      })
+      .add("backlight", [&displayBacklight](JsonVariant& pJson) {
+         JsonObject buzzerConfiguration = pJson.as<JsonObject>();
+
+         ESP_LOGI(TAG, "backlight containsKey(hue) = %d", buzzerConfiguration.containsKey("hue"));
+         ESP_LOGI(TAG, "backlight containsKey(brightness) = %d", buzzerConfiguration.containsKey("brightness"));
+         ESP_LOGI(TAG, "backlight containsKey(autoOffTimeInSeconds) = %d", buzzerConfiguration.containsKey("autoOffTimeInSeconds"));
+
+         std::string dump;
+         serializeJsonPretty(pJson, dump);
+         std::cout << std::endl << dump << std::endl;
+
+         JsonVariant h = buzzerConfiguration["hue"];
+         JsonVariant b = buzzerConfiguration["brightness"];
+         JsonVariant t = buzzerConfiguration["autoOffTimeInSeconds"];
+         if (h.is<uint32_t>() && b.is<uint32_t>() && t.is<uint32_t>()) {
+            displayBacklight.configure(h.as<uint32_t>(), b.as<uint32_t>(), std::chrono::seconds(t.as<uint32_t>()));
+            return std::make_tuple(true, "ok");
+         }
+         return std::make_tuple(false, "invalid body");
+      });
 
    Bt::Events::Subscription<Bt::AlarmClock::I_Clock::MinuteUpdate> minuteUpdateSubscription(mainExecutionContext, [&clock, &mqttController](auto pEvent) {
       auto local = clock.local();

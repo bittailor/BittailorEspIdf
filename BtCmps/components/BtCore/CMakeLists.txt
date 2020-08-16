@@ -4,6 +4,7 @@ idf_component_register(
 		"src/Bt/Core/Logging.cpp"
 		"src/Bt/Core/StringBuilder.cpp"
 		"src/Bt/Core/Timezone.cpp"
+		"src/Bt/Devices/EPaper.cpp"
 		"src/Bt/Concurrency/SchedulingExecutionContext.cpp"
 		"src/Bt/Concurrency/SchedulingExecutionContextBase.cpp"
 		"src/Bt/Concurrency/CountdownLatch.cpp"

@@ -6,19 +6,20 @@ rescue LoadError
 end
 
 
-port = '/dev/cu.usbserial-1420'
-#port = '/dev/cu.usbserial-0001'
+# port = '/dev/cu.usbserial-1420'
+port = '/dev/cu.usbserial-0001'
 baudrate = 921600
 
 
-build_target_folders = ['BtApps/BtAppAlarmClock', 'BtCmps/test', 'BtCmps']
+build_target_folders = ['BtApps/BtAppAlarmClock', 'BtApps/BtSketchEPaper', 'BtCmps/test', 'BtCmps']
 build_host_folders = ['BtHostTests']
 build_folders = build_host_folders + build_target_folders 
 
 test_host_folders = build_host_folders
 test_target_folders = ['BtCmps/test']
 
-flash_folder = 'BtApps/BtAppAlarmClock'
+#flash_folder = 'BtApps/BtAppAlarmClock'
+flash_folder = 'BtApps/BtSketchEPaper'
  
 def idf_sh(cmd)
     return sh(". $HOME/esp/esp-idf/export.sh && " + cmd)

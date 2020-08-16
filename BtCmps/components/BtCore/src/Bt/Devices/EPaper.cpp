@@ -150,41 +150,44 @@ void EPaper::sendData(const uint8_t* pData, size_t pLength) {
 }
 
 void EPaper::setFrameMemory(const uint8_t* pImageBuffer) {
+   ESP_LOGV(TAG, " setFrameMemory 1 enter");
    setMemoryArea(0, 0, EPD_WIDTH - 1, EPD_HEIGHT - 1);
    setMemoryPointer(0, 0);
    sendCommand(WRITE_RAM);
    sendData(pImageBuffer, mWidth / 8 * mHeight);
+   ESP_LOGV(TAG, " setFrameMemory 1 exit");
 }
 
 void EPaper::setFrameMemory(const uint8_t* pImageBuffer, int pX, int pY, int pImageWidth, int pImageHeight) {
-    int xEnd;
-    int yEnd;
+   ESP_LOGV(TAG, " setFrameMemory 2 enter");
+   int xEnd;
+   int yEnd;
 
-    if (pImageBuffer == NULL ||
-        pX < 0 || pImageWidth < 0 ||
-        pY < 0 || pImageHeight < 0) {
-        return;
-    }
-    /* x point must be the multiple of 8 or the last 3 bits will be ignored */
-    pX &= 0xF8;
-    pImageWidth &= 0xF8;
-    if (pX + pImageWidth >= mWidth) {
-        xEnd = mWidth - 1;
-    } else {
-        xEnd = pX + pImageWidth - 1;
-    }
-    if (pY + pImageHeight >= mHeight) {
-        yEnd = mHeight - 1;
-    } else {
-        yEnd = pY + pImageHeight - 1;
-    }
-    setMemoryArea(pX, pY, xEnd, yEnd);
-    setMemoryPointer(pX, pY);
-    sendCommand(WRITE_RAM);
+   if (pImageBuffer == NULL ||
+            pX < 0 || pImageWidth < 0 ||
+            pY < 0 || pImageHeight < 0) {
+      return;
+   }
+   /* x point must be the multiple of 8 or the last 3 bits will be ignored */
+   pX &= 0xF8;
+   pImageWidth &= 0xF8;
+   if (pX + pImageWidth >= mWidth) {
+      xEnd = mWidth - 1;
+   } else {
+      xEnd = pX + pImageWidth - 1;
+   }
+   if (pY + pImageHeight >= mHeight) {
+      yEnd = mHeight - 1;
+   } else {
+      yEnd = pY + pImageHeight - 1;
+   }
+   setMemoryArea(pX, pY, xEnd, yEnd);
+   setMemoryPointer(pX, pY);
+   sendCommand(WRITE_RAM);
 
-    sendData(pImageBuffer, (pImageWidth * mHeight)/8);
+   sendData(pImageBuffer, (pImageWidth * mHeight)/8);
 
-    /*
+   /*
     ESP_LOGI(TAG, "start setFrameMemory ");
     for (int j = 0; j < yEnd - pY + 1; j++) {
         for (int i = 0; i < (xEnd - pX + 1) / 8; i++) {
@@ -194,15 +197,19 @@ void EPaper::setFrameMemory(const uint8_t* pImageBuffer, int pX, int pY, int pIm
     }
     ESP_LOGI(TAG, "end setFrameMemory ");
     */
+   ESP_LOGV(TAG, " setFrameMemory 2 exit");
 }
 
 void EPaper::clearFrameMemory(bool pWhite) {
+   ESP_LOGV(TAG, " clearFrameMemory enter");
    setMemoryArea(0, 0, EPD_WIDTH - 1, EPD_HEIGHT - 1);
    setMemoryPointer(0, 0);
    sendCommand(WRITE_RAM);
    for (int i = 0; i < EPD_WIDTH / 8 * EPD_HEIGHT; i++) {
      sendData(pWhite ? 0xFF : 0x00);
    }
+   ESP_LOGV(TAG, " clearFrameMemory exit");
+
 }
 
 void EPaper::displayFrame(std::function<void()> pOnFinished) {
@@ -222,6 +229,11 @@ void EPaper::displayFrame(std::function<void()> pOnFinished) {
 
 void EPaper::enablePartial() {
    mLut = sLutPartialUpdate;
+   sendLut();
+}
+
+void EPaper::enableFull() {
+   mLut = sLutFullUpdate;
    sendLut();
 }
 

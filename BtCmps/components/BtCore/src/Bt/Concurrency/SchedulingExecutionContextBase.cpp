@@ -56,10 +56,10 @@ namespace Concurrency {
       int missedPeriods = 0;
       while(millisecondsToTarget(pMillisecondsTimestamp) == 0){
          missedPeriods++;
-         mStartTime = mStartTime + mPeriod;   
+         mStartTime = mStartTime + mPeriod;
       }
       if(missedPeriods > 0) {
-         ESP_LOGW(TAG, "Missed %d periods of %ums\n", missedPeriods ,mPeriod);
+         ESP_LOGW(TAG, "Missed %d periods of %ums", missedPeriods ,mPeriod);
       }
       return !mCanceled;
    }
@@ -123,6 +123,7 @@ SchedulingExecutionContextBase::~SchedulingExecutionContextBase() {
 }
 
 SchedulingExecutionContextBase::PeriodicTimer SchedulingExecutionContextBase::callPeriodically(const std::chrono::milliseconds& pPeriod, std::function<void(I_PeriodicTimer&)> pFunction) { 
+   ESP_LOGV(TAG, " -> callPeriodically %d", (int)pPeriod.count());
    uint32_t now = mTime.milliseconds();
    auto timer = std::make_shared<PeriodicTimerImpl>(now, pPeriod.count(), pFunction);
    insertTimer(timer, now);
@@ -131,6 +132,7 @@ SchedulingExecutionContextBase::PeriodicTimer SchedulingExecutionContextBase::ca
 }
 
 SchedulingExecutionContextBase::OnceTimer SchedulingExecutionContextBase::callOnce(const std::chrono::milliseconds& pDelay, std::function<void()> pFunction) {
+   ESP_LOGV(TAG, " -> callOnce %d", (int)pDelay.count());
    uint32_t now = mTime.milliseconds();
    auto timer = std::make_shared<OnceTimerImpl>(now, pDelay.count(), pFunction);
    insertTimer(timer, now);
@@ -144,7 +146,10 @@ void SchedulingExecutionContextBase::call(std::function<void()> pFunction) {
 }
 
 void SchedulingExecutionContextBase::workcycle() {
+   ESP_LOGV(TAG, " -> workcycle enter");
+   auto t1 = mTime.microseconds();
    std::chrono::milliseconds delay = std::chrono::milliseconds(processTimers());
+   auto t2 = mTime.microseconds();
    size_t numberOfQueuedCalls =  mQueue.size();
    for (size_t i = 0; i < numberOfQueuedCalls; i++)
    {
@@ -152,7 +157,12 @@ void SchedulingExecutionContextBase::workcycle() {
       mQueue.pop(function);
       function();
    }
+   auto t3 = mTime.microseconds();
+   auto tTimers = t2-t1;
+   auto tCalls = t3-t2;
+   ESP_LOGV(TAG, " -> workcycle t => tTimers = %d us tCalls = %d us", tTimers, tCalls);
    std::chrono::milliseconds timeout = std::min(delay, maxWorkcycleTimeout());
+   ESP_LOGV(TAG, " -> workcycle exit wait => timeout = %d delay = %d maxWorkcycleTimeout = %d", (int)timeout.count(), (int)delay.count(), (int)maxWorkcycleTimeout().count());
    mQueue.waitFor(timeout);
 }
 
@@ -163,19 +173,24 @@ void SchedulingExecutionContextBase::insertTimer(std::shared_ptr<I_ExecutionCont
 }
 
 uint32_t SchedulingExecutionContextBase::processTimers() {
-   uint32_t now = mTime.milliseconds();
+   ESP_LOGV(TAG, " -> processTimers enter mTimers.size() = %d", mTimers.size());
    while (!mTimers.empty()) {
       auto timer = mTimers.front();
-      uint32_t delay = timer->millisecondsToTarget(now);
+      uint32_t delay = timer->millisecondsToTarget(mTime.milliseconds());
       if (delay > 0) {
+         ESP_LOGV(TAG, " -> processTimers exit mTimers.size() = %d delay = %d", mTimers.size(), delay);
          return delay;
       }
       mTimers.pop_front();
-      bool reschedule = timer->execute(now);
+      ESP_LOGV(TAG, " -> processTimers execute start");
+      bool reschedule = timer->execute(mTime.milliseconds());
+      ESP_LOGV(TAG, " -> processTimers execute end");
       if(reschedule) {
+         ESP_LOGV(TAG, " -> processTimers reschedule");
          insertTimer(timer, mTime.milliseconds());
       }
    }
+   ESP_LOGV(TAG, " -> processTimers exit mTimers.size() = %d delay = max", mTimers.size());
    return std::numeric_limits<uint32_t>::max();	
 }
 

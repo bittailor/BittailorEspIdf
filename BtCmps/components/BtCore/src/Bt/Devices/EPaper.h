@@ -34,6 +34,7 @@ class EPaper
       void clearFrameMemory(bool pWhite = true);
       void displayFrame(std::function<void()> pOnFinished);
       void enablePartial();
+      void enableFull();
 
    private:
       void init();

@@ -45,8 +45,7 @@ void SpiDevice::send(uint8_t pData) {
 }
 
 void SpiDevice::send(const uint8_t* pData, size_t pLength) {
-   ESP_LOGI(TAG, " *** SpiDevice::send data pLength = %u", pLength);
-
+   //ESP_LOGI(TAG, " *** SpiDevice::send data pLength = %u", pLength);
    if (pLength == 0 || pData == nullptr) {return;}
    spi_transaction_t t {};
    memset(&t, 0, sizeof(t));

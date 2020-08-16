@@ -70,6 +70,12 @@ void displayCounting(Paint& paint, Bt::Devices::EPaper& paper) {
    auto t3 = esp_timer_get_time();
    paper.setFrameMemory(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());
    auto t4 = esp_timer_get_time();
+   if(counter%20 == 18) {
+      paper.enableFull();
+   }
+   if(counter%20 == 19) {
+        paper.enablePartial();
+     }
    paper.displayFrame([&paper,&paint,t1,t2,t3,t4](){
       auto t5 = esp_timer_get_time();
       int clear  = t2-t1;
@@ -98,7 +104,7 @@ void sketchEPaperMain(void* pContext)
    Bt::Storage::NvsRepository nvsRepository;
    Bt::Concurrency::SchedulingExecutionContext mainExecutionContext(time);
    Bt::Peripherals::SpiMaster spiMaster(VSPI_HOST, (gpio_num_t)SCK_PIN, (gpio_num_t)MOSI_PIN);
-   Bt::Peripherals::SpiDevice ePaperSpiDevice(spiMaster, (gpio_num_t)CS_PIN, 2000000);
+   Bt::Peripherals::SpiDevice ePaperSpiDevice(spiMaster, (gpio_num_t)CS_PIN, 5000000);
    Bt::Peripherals::DigitalOut ePaperDc((gpio_num_t)DC_PIN);
    Bt::Peripherals::DigitalOut ePaperReset((gpio_num_t)RST_PIN);
    Bt::Peripherals::DigitalIn ePaperBusy((gpio_num_t)BUSY_PIN, GPIO_PULLUP_ONLY);
@@ -117,8 +123,10 @@ void sketchEPaperMain(void* pContext)
       ESP_LOGI(TAG, "epaper on initialized");
       paper.clearFrameMemory();
       paper.displayFrame([&paper,&mainExecutionContext,&paint](){
+         ESP_LOGI(TAG, " clear frame 1 done");
          paper.clearFrameMemory();
          paper.displayFrame([&paper,&mainExecutionContext,&paint](){
+            ESP_LOGI(TAG, " clear frame 2 done");
             paint.DrawRectangle(5, 5, EPD_HEIGHT-5, EPD_WIDTH-5 , COLORED);
             paint.DrawRectangle(10, 10, EPD_HEIGHT-10, 20, COLORED);
             paint.DrawStringAt(10, 20, "Welcome To Bittailor 1", &Font16, COLORED);

@@ -182,11 +182,18 @@ void EPaper::setFrameMemory(const uint8_t* pImageBuffer, int pX, int pY, int pIm
     setMemoryPointer(pX, pY);
     sendCommand(WRITE_RAM);
 
+    sendData(pImageBuffer, (pImageWidth * mHeight)/8);
+
+    /*
+    ESP_LOGI(TAG, "start setFrameMemory ");
     for (int j = 0; j < yEnd - pY + 1; j++) {
         for (int i = 0; i < (xEnd - pX + 1) / 8; i++) {
+            ESP_LOGI(TAG, " --> index = %d", i + j * (pImageWidth / 8));
             sendData(pImageBuffer[i + j * (pImageWidth / 8)]);
         }
     }
+    ESP_LOGI(TAG, "end setFrameMemory ");
+    */
 }
 
 void EPaper::clearFrameMemory(bool pWhite) {

@@ -64,12 +64,12 @@ void executionContext(void* pContext)
       }
       ESP_LOGI(TAG, "start discover");
       auto discoveryAgent = new Bt::Bluetooth::BleDeviceDiscoveryAgent([&mainExecutionContext, &mqttController](auto pDeviceInfo){
-         if(pDeviceInfo->serviceUuid().valid() && pDeviceInfo->serviceUuid() == 0xfe95 ) {
+         if(!pDeviceInfo->serviceUuid().isEmpty() && pDeviceInfo->serviceUuid() == 0xfe95 ) {
             ESP_LOGI(TAG, "DeviceInfo with serviceUuid %s address %s",
-               Bt::Core::DefaultStringBuilder().hexencode(pDeviceInfo->serviceUuid().raw()).c_str(),
-               Bt::Core::DefaultStringBuilder().hexencode(pDeviceInfo->address()).c_str());   
+               pDeviceInfo->serviceUuid().toString().c_str(),
+               pDeviceInfo->address().toString().c_str());   
             mainExecutionContext.call([&mqttController, pDeviceInfo](){
-               mqttController.publish("home/sensor/mijia/discover",Bt::Core::DefaultStringBuilder().hexencode(pDeviceInfo->address()).c_str());    
+               mqttController.publish("home/sensor/mijia/discover", pDeviceInfo->address().toString());    
             }); 
          }
       });

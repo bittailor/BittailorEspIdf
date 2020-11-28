@@ -1,11 +1,13 @@
 idf_component_register(
 	SRCS 
+		"src/Bt/Bluetooth/BleAddress.cpp"
 		"src/Bt/Bluetooth/BleAdvertisement.cpp"
 		"src/Bt/Bluetooth/BleDeviceInfo.cpp"
 		"src/Bt/Bluetooth/BleUuid.cpp"
 		"src/Bt/Concurrency/CountingLatch.cpp"
 		"src/Bt/Core/Logging.cpp"
 		"src/Bt/Core/StringBuilder.cpp"
+		"src/Bt/Core/StringUtilities.cpp"
 		"src/Bt/Core/Timezone.cpp"
 		"src/Bt/Devices/EPaper.cpp"
 		"src/Bt/Devices/MijiaBle.cpp"

@@ -14,15 +14,20 @@ namespace {
 StringBuilderBase& StringBuilderBase::append(const char* pFormat, ...) {
    va_list arglist;
    va_start(arglist, pFormat);
-   size_t lenght = vsnprintf(mBuffer+mLenght, mSize-mLenght, pFormat,arglist);
-   va_end( arglist );
+   vappend(pFormat,arglist);
+   va_end(arglist);
+   return *this;
+}
+
+int StringBuilderBase::vappend(const char* pFormat, va_list pArglist) {
+   int lenght = vsnprintf(mBuffer+mLenght, mSize-mLenght, pFormat, pArglist);
    if(lenght > (mSize - mLenght - 1) ){
       ESP_LOGW(TAG, "StringBuilder full mLenght=%u mSize=%u", mLenght, mSize);
       mLenght = mSize;
-      return *this;
+      return mLenght;
    }
    mLenght += lenght;
-   return *this;
+   return mLenght;
 }
 
 StringBuilderBase& StringBuilderBase::hexencode(const uint8_t *data, size_t len) {
@@ -33,7 +38,7 @@ StringBuilderBase& StringBuilderBase::hexencode(const uint8_t *data, size_t len)
       append("%02X ", data[i]);
     }
   }
-  return append("(%u)", len);
+  return append("(%zu)", len);
 }
 
 StringBuilderBase& StringBuilderBase::reset() {

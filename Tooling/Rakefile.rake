@@ -6,7 +6,7 @@ rescue LoadError
 end
 
 
-# port = '/dev/cu.usbserial-1410'
+port = '/dev/cu.usbserial-1410'
 # port = '/dev/cu.usbserial-1420'
 # port = '/dev/cu.usbserial-14101'
 # port = 'ls -0001'
@@ -91,7 +91,7 @@ namespace :build do
                 sh "pwd"    
                 sh 'mkdir -p build'
                 Dir.chdir('build') do 
-                    sh 'cmake .. -G Ninja'
+                    sh 'cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Debug'
                     sh 'ninja'
                 end 
             end

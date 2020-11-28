@@ -66,7 +66,7 @@ int BleDeviceDiscoveryAgent::onGapEvent(struct ble_gap_event* pEvent) {
 
 void BleDeviceDiscoveryAgent::onDiscover(struct ble_gap_event* pEvent) {
     auto deviceInfo = std::make_shared<BleDeviceInfo>();
-    deviceInfo->address(pEvent->disc.addr.val);
+    deviceInfo->address(BleAddress::from48BitLe(pEvent->disc.addr.val));
 
     // Bt::Core::DefaultStringBuilder stringBuilder;
     // auto address = pEvent->disc.addr.val;
@@ -107,30 +107,21 @@ void BleDeviceDiscoveryAgent::onDiscover(struct ble_gap_event* pEvent) {
     // }
 
     if (fields.svc_data_uuid16 != NULL) {
-        // stringBuilder.reset();
-        // uint16_t uuid = fields.svc_data_uuid16[0] | (fields.svc_data_uuid16[1] << 8);
-        // stringBuilder.hexencode(fields.svc_data_uuid16+2, fields.svc_data_uuid16_len-2);                    
-        // ESP_LOGI(TAG, "    svc_data_uuid16 %d 0x%04" PRIx16 "  => %s", uuid, uuid ,stringBuilder.c_str());
-
-        deviceInfo->serviceData(BleUuid{{fields.svc_data_uuid16[1], fields.svc_data_uuid16[0]}}, fields.svc_data_uuid16+2, fields.svc_data_uuid16_len-2);
-
+        deviceInfo->serviceData(BleUuid::from16BitLe(fields.svc_data_uuid16), 
+            fields.svc_data_uuid16+BleUuid::cNumBytes16, 
+            fields.svc_data_uuid16_len-BleUuid::cNumBytes16);
     }
 
     if (fields.svc_data_uuid32 != NULL) {
-        // stringBuilder.reset();
-        // stringBuilder.hexencode(fields.svc_data_uuid32, fields.svc_data_uuid32_len);                    
-        // ESP_LOGI(TAG, "    svc_data_uuid32 = %s", stringBuilder.c_str());
-        deviceInfo->serviceData(BleUuid{{fields.svc_data_uuid16[3], fields.svc_data_uuid16[2], fields.svc_data_uuid16[1], fields.svc_data_uuid16[0]}}, fields.svc_data_uuid16+4, fields.svc_data_uuid16_len-4);
-
+        deviceInfo->serviceData(BleUuid::from32BitLe(fields.svc_data_uuid32), 
+            fields.svc_data_uuid32+BleUuid::cNumBytes32, 
+            fields.svc_data_uuid32_len-BleUuid::cNumBytes32);
     }
 
     if (fields.svc_data_uuid128 != NULL) {
-        // stringBuilder.reset();
-        // stringBuilder.hexencode(fields.svc_data_uuid128, fields.svc_data_uuid128_len);                           
-        // ESP_LOGI(TAG, "    vc_data_uuid128 = %s", stringBuilder.c_str());
-        std::vector<uint8_t> raw{fields.svc_data_uuid128, fields.svc_data_uuid128+16};
-        std::reverse(std::begin(raw),std::end(raw));
-        deviceInfo->serviceData(BleUuid{raw}, fields.svc_data_uuid16+4, fields.svc_data_uuid16_len-4);
+        deviceInfo->serviceData(BleUuid::from128BitLE(fields.svc_data_uuid128), 
+            fields.svc_data_uuid128+BleUuid::cNumBytes128, 
+            fields.svc_data_uuid128_len-BleUuid::cNumBytes128);
     }
     mOnDiscover(deviceInfo); 
 }

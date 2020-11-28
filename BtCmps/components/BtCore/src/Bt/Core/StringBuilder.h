@@ -13,6 +13,7 @@ class StringBuilderBase {
       }
    public:
       StringBuilderBase& append(const char* pFormat, ...) __attribute__ ((format (printf, 2, 3)));
+      int vappend(const char* pFormat, va_list pArglist);
       
       StringBuilderBase& hexencode(const uint8_t *data, size_t len);
       template<typename T>
@@ -24,6 +25,8 @@ class StringBuilderBase {
          return mBuffer;
       }
 
+      size_t capacity() const {return mSize;}
+
    private:
       char* mBuffer;
       size_t mSize;
@@ -32,12 +35,11 @@ class StringBuilderBase {
 };
 
 template<size_t N>
-class StringBuilder : public StringBuilderBase  {
+class StringBuilder : private std::array<char,N>,  public StringBuilderBase  {
    public:
-      StringBuilder(): StringBuilderBase{mBuffer.data(),N}, mBuffer{0}{
+      StringBuilder(): StringBuilderBase{this->data(),N} {
       }
    private:
-      std::array<char,N> mBuffer;
 };
 
 typedef StringBuilder<200> DefaultStringBuilder; 

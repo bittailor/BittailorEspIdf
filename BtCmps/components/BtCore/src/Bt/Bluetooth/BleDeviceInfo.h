@@ -10,12 +10,11 @@
 #include <array>
 #include <algorithm>
 
+#include <Bt/Bluetooth/BleAddress.h>
 #include <Bt/Bluetooth/BleUuid.h>
 
 namespace Bt {
 namespace Bluetooth {
-
-typedef std::array<uint8_t,6> BleAddress;
 
 class BleDeviceInfo
 {
@@ -28,7 +27,6 @@ class BleDeviceInfo
       ~BleDeviceInfo();
 
       void address(const BleAddress& pAddress) {mAddress = pAddress;}
-      void address(const uint8_t* pAddress) {std::copy_n(pAddress, mAddress.size(), std::begin(mAddress));}
       const BleAddress& address() const {return mAddress;}
 
       const BleUuid& serviceUuid() const {return mServiceUuid;}

@@ -1,5 +1,7 @@
 idf_component_register(
 	SRCS 
+		"src/Bt/Bluetooth/BleController.cpp"
+		"src/Bt/Bluetooth/BleDeviceDiscoveryAgent.cpp"
 		"src/Bt/Core/Time.cpp"
 		"src/Bt/Events/DefaultEventLoop.cpp"
 		"src/Bt/Events/EventLoopSubscription.cpp"
@@ -16,5 +18,5 @@ idf_component_register(
 		"src/Bt/Storage/NvsRepository.cpp"
 		"src/Bt/Storage/VirtualFilesystem.cpp"
 	INCLUDE_DIRS "src"
-	REQUIRES driver nvs_flash mqtt spiffs BtCore
+	REQUIRES driver nvs_flash mqtt spiffs BtCore bt
 )

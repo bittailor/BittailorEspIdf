@@ -17,6 +17,8 @@ class MqttSubscription;
 
 class I_MqttController {
    public:
+      struct Connected{};
+
       virtual ~I_MqttController() {}
 
       virtual void publish(const char* pTopic, const std::string& pMsg, int pQos = 0, bool pRetain = false) = 0;

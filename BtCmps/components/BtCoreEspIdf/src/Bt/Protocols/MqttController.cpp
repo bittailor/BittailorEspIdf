@@ -9,6 +9,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include <Bt/Events/Events.h>
+
 #include "Bt/Protocols/Mqtt/Mqtt.h"
 #include "Bt/Protocols/MqttSubscription.h"
 #include "Bt/Protocols/Tag.h"
@@ -35,7 +37,7 @@ MqttController::MqttController(Events::I_EventLoop& pEventLoop, const std::strin
    }
    mClientHandle = esp_mqtt_client_init(&cfg);
    if(mClientHandle == nullptr) {
-      throw std::logic_error("Failed to init MQTT client");
+      throw std::runtime_error("Failed to init MQTT client");
    }
    ESP_ERROR_CHECK(esp_mqtt_client_register_event(mClientHandle, MQTT_EVENT_ANY, &MqttController::mqttEventHandler, this));
 }
@@ -62,6 +64,7 @@ void MqttController::onConnected() {
    for (auto& subscription : toSubscribe) {
          subscribe(subscription);
    }
+   Bt::Events::publish(I_MqttController::Connected{});
 }
 
 void MqttController::onSubscribed(int msgId) {

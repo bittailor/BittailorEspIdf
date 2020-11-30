@@ -1,10 +1,13 @@
 #include <iostream>
+#include <queue>
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
 #include <esp_log.h>
 #include <esp_system.h>
+
+#include <ArduinoJson.h>
 
 #include <Bt/Bluetooth/BleController.h>
 #include <Bt/Bluetooth/BleDeviceDiscoveryAgent.h>
@@ -13,6 +16,9 @@
 #include <Bt/Core/StringBuilder.h>
 #include <Bt/Core/Time.h>
 #include <Bt/Core/Timezone.h>
+#include <Bt/Devices/Xiaomi/DeviceFactory.h>
+#include <Bt/Devices/Xiaomi/HumiditySensor.h>
+#include <Bt/Devices/Xiaomi/BleDiscoveryAgent.h>
 #include <Bt/Events/Events.h>
 #include <Bt/Events/DefaultEventLoop.h>
 #include <Bt/Network/WiFiController.h>
@@ -55,29 +61,115 @@ void executionContext(void* pContext)
                                                       cfg.password = CONFIG_BT_MIIJA_GATEWAY_MQTT_PASSWORD;
                                                 });
 
-   int status = 0;
-   std::function<void()> startScan = [&status, &mainExecutionContext, &mqttController](){
-      status++;
-      ESP_LOGI(TAG, "startScan status = %d", status);
-      if(status < 2) {
+   Bt::Bluetooth::BleController bleController;
+   
+   Bt::Devices::Xiaomi::DeviceFactory mXiaomiDeviceFactory;
+   Bt::Devices::Xiaomi::HumiditySensor::registerAtFactory(mXiaomiDeviceFactory, bleController) ;
+   Bt::Devices::Xiaomi::BleDiscoveryAgent xiaomiBleDiscoveryAgent(bleController);
+
+   //std::vector<std::shared_ptr<Bt::Devices::Xiaomi::I_Device>> xiaomiDevices;
+   std::queue<std::shared_ptr<Bt::Devices::Xiaomi::I_Device>> xiaomiDevicesToConnect;
+   std::queue<std::shared_ptr<Bt::Devices::Xiaomi::I_Device>> xiaomiDevicesConnected;
+
+
+   std::function<void()> connectNextDevice = [&mainExecutionContext,&xiaomiDevicesToConnect,&xiaomiDevicesConnected,&connectNextDevice](){
+      if(xiaomiDevicesToConnect.empty()){
+         return;
+      }   
+      auto device = xiaomiDevicesToConnect.front();
+      if(device->connect()){
+         xiaomiDevicesConnected.push(device);
+         xiaomiDevicesToConnect.pop();  
+      }
+      mainExecutionContext.callOnce(std::chrono::seconds(10),connectNextDevice);
+   };
+
+   int counter = 0;
+   std::function<void()> startScan = [&counter, &time, &mainExecutionContext, &mqttController, &mXiaomiDeviceFactory, &xiaomiDevicesToConnect, &connectNextDevice, &xiaomiBleDiscoveryAgent](){
+      counter++;
+      ESP_LOGI(TAG, "startScan counter = %d", counter);
+      if(counter < 2) {
          return;
       }
       ESP_LOGI(TAG, "start discover");
-      auto discoveryAgent = new Bt::Bluetooth::BleDeviceDiscoveryAgent([&mainExecutionContext, &mqttController](auto pDeviceInfo){
-         if(!pDeviceInfo->serviceUuid().isEmpty() && pDeviceInfo->serviceUuid() == 0xfe95 ) {
-            ESP_LOGI(TAG, "DeviceInfo with serviceUuid %s address %s",
-               pDeviceInfo->serviceUuid().toString().c_str(),
-               pDeviceInfo->address().toString().c_str());   
-            mainExecutionContext.call([&mqttController, pDeviceInfo](){
-               mqttController.publish("home/sensor/mijia/discover", pDeviceInfo->address().toString());    
-            }); 
+      xiaomiBleDiscoveryAgent.discoverBleDevices(std::chrono::seconds(20),
+         [&time, &mainExecutionContext, &mqttController, &mXiaomiDeviceFactory, &xiaomiDevicesToConnect, &connectNextDevice](auto&& pDevices){
+            ESP_LOGI(TAG, "discover completed %zu devices", pDevices.size());
+            mainExecutionContext.call([&time, &mainExecutionContext, &mqttController, &mXiaomiDeviceFactory, &xiaomiDevicesToConnect, &connectNextDevice, pDevices](){
+               // int delay = 5;
+               for (auto device : pDevices)
+               {                
+                  auto xiaomiDevice = mXiaomiDeviceFactory.createDevice(device);
+                  xiaomiDevicesToConnect.push(xiaomiDevice);
+                  
+                  // mainExecutionContext.callOnce(std::chrono::seconds(delay),[device,xiaomiDevice](){
+                  //    printf("\n");
+                  //    printf("\n");
+                  //    ESP_LOGI(TAG, "connect to => %s", device->address().toString().c_str());           
+                  //    xiaomiDevice->connect(); 
+                  // });
+                  // delay += 10;
+               }
+               mainExecutionContext.callOnce(std::chrono::seconds(5),connectNextDevice);
+               
+               
+               
+               // if(pDevices.size() > 0) {
+               //    auto xiaomiDevice = mXiaomiDeviceFactory.createDevice(pDevices[0]);
+               //    xiaomiDevices.push_back(xiaomiDevice);
+               //    xiaomiDevice->connect();
+               // }
+               
+               /*
+               {
+                  DynamicJsonDocument doc(1024);
+                  Bt::Core::StringBuilder<200> builder;          
+                  for (auto device : pDevices)
+                  {
+                     builder.reset().hexencode(device->serviceData());
+                     doc[device->address().toString()].set(builder.c_str()); 
+                  } 
+                  mqttController.publish("bittailor/home/sensor/mijia/discover", doc.as<std::string>());
+               }
+               {
+                  DynamicJsonDocument doc(1024);
+                  auto heap = doc.createNestedObject("heap");          
+                  heap["free"].set(esp_get_free_heap_size());
+                  heap["min"].set(esp_get_minimum_free_heap_size());
+                  heap["block"].set(heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));               
+                  doc["uptime"].set(time.milliseconds());
+                  mqttController.publish("bittailor/home/gateway/health", doc.as<std::string>());
+               }
+               
+               mainExecutionContext.callOnce(std::chrono::seconds(2), startScan); 
+               */
+
+            });
+         });
+
+      /*
+      auto discoveryAgent = new Bt::Bluetooth::BleDeviceDiscoveryAgent(
+         [&mainExecutionContext, &mqttController](auto pDeviceInfo){
+            if(!pDeviceInfo->serviceUuid().isEmpty() && pDeviceInfo->serviceUuid() == 0xfe95 ) {
+               ESP_LOGI(TAG, "DeviceInfo with serviceUuid %s address %s",
+                  pDeviceInfo->serviceUuid().toString().c_str(),
+                  pDeviceInfo->address().toString().c_str());   
+               mainExecutionContext.call([&mqttController, pDeviceInfo](){
+                  mqttController.publish("bittailor/home/sensor/mijia/discover", pDeviceInfo->address().toString());    
+               }); 
+            }
+         },
+         [&mainExecutionContext, &startScan](auto devices){
+            ESP_LOGI(TAG, "discover completed %zu devices", devices.size());
+            mainExecutionContext.callOnce(std::chrono::seconds(2), startScan);   
          }
-      });
+      );
+
       discoveryAgent->interval(std::chrono::milliseconds(35));
       discoveryAgent->window(std::chrono::milliseconds(20));
       discoveryAgent->duplicateFilter(true);
-
-      discoveryAgent->start(std::chrono::seconds(600));
+      discoveryAgent->start(std::chrono::seconds(20));
+      */
    };
 
 
@@ -91,8 +183,7 @@ void executionContext(void* pContext)
    });
 
 
-   Bt::Bluetooth::BleController bleController;
-
+  
 
    ESP_LOGI(TAG, "Run:");
    ESP_LOGI(TAG, " - Free memory : %d bytes", esp_get_free_heap_size());

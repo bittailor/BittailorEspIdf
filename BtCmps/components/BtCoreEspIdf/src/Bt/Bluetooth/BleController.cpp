@@ -20,6 +20,9 @@
 #include <Bt/Core/Logging.h>
 #include <Bt/Events/Events.h>
 
+#include "Bt/Bluetooth/BleClient.h"
+#include "Bt/Bluetooth/BleDeviceDiscoveryAgent.h"
+
 extern "C" void ble_store_config_init(void);
 
 namespace Bt {
@@ -56,6 +59,14 @@ BleController::BleController() {
 }
 
 BleController::~BleController() {
+}
+
+std::shared_ptr<I_BleDeviceDiscoveryAgent>  BleController::createDeviceDiscoveryAgent(I_BleDeviceDiscoveryAgent::OnDiscover pOnDiscover, I_BleDeviceDiscoveryAgent::OnDiscoverComplete pOnDiscoverComplete) {
+    return std::make_shared<BleDeviceDiscoveryAgent>(pOnDiscover, pOnDiscoverComplete);
+}
+
+std::shared_ptr<I_BleClient>  BleController::createClient() {
+    return std::make_shared<BleClient>();
 }
 
 void BleController::onHostReset(int pReason) {

@@ -17,8 +17,8 @@ namespace {
     constexpr const char* TAG = "Bt::Bluetooth::BleDeviceDiscoveryAgent";
 }
 
-BleDeviceDiscoveryAgent::BleDeviceDiscoveryAgent(std::function<void(std::shared_ptr<BleDeviceInfo>)> pOnDiscover) 
-: mOnDiscover(pOnDiscover), mParameters{} {
+BleDeviceDiscoveryAgent::BleDeviceDiscoveryAgent(OnDiscover pOnDiscover , OnDiscoverComplete pOnDiscoverComplete) 
+: mOnDiscover(pOnDiscover), mOnDiscoverComplete(pOnDiscoverComplete), mParameters{} {
     ESP_ERROR_CHECK(ble_hs_id_infer_auto(0, &mOwnAddrType));
     mParameters.filter_policy      = BLE_HCI_SCAN_FILT_NO_WL;
     mParameters.passive            = 1; // If set, don’t send scan requests to advertisers (i.e., don’t request additional advertising data).
@@ -30,7 +30,6 @@ BleDeviceDiscoveryAgent::BleDeviceDiscoveryAgent(std::function<void(std::shared_
 }
 
 BleDeviceDiscoveryAgent::~BleDeviceDiscoveryAgent() {
-
 }
 
 void BleDeviceDiscoveryAgent::start(std::chrono::milliseconds pDuration) {
@@ -50,33 +49,32 @@ int BleDeviceDiscoveryAgent::onGapEventStatic(struct ble_gap_event* pEvent, void
 }
 
 int BleDeviceDiscoveryAgent::onGapEvent(struct ble_gap_event* pEvent) {
-    // ESP_LOGI(TAG, "onGapEvent pEvent->type=%d",pEvent->type);   
+    ESP_LOGD(TAG, "onGapEvent pEvent->type=%d",pEvent->type);   
     switch (pEvent->type)
     {
         case BLE_GAP_EVENT_DISC: {
-            // ESP_LOGI(TAG, "onGapEvent BLE_GAP_EVENT_DISC");
+            ESP_LOGD(TAG, "onGapEvent BLE_GAP_EVENT_DISC");
             onDiscover(pEvent);
         } break;
         case BLE_GAP_EVENT_DISC_COMPLETE: {
-            ESP_LOGI(TAG, "onGapEvent BLE_GAP_EVENT_DISC_COMPLETE");
+            ESP_LOGD(TAG, "onGapEvent BLE_GAP_EVENT_DISC_COMPLETE");
+            onDiscoverComplete(pEvent);
         } break;
     }    
     return ESP_OK;
 }
 
 void BleDeviceDiscoveryAgent::onDiscover(struct ble_gap_event* pEvent) {
-    auto deviceInfo = std::make_shared<BleDeviceInfo>();
-    deviceInfo->address(BleAddress::from48BitLe(pEvent->disc.addr.val));
-
-    // Bt::Core::DefaultStringBuilder stringBuilder;
-    // auto address = pEvent->disc.addr.val;
-    // stringBuilder.append("%02x:%02x:%02x:%02x:%02x:%02x",
-    //                         address[5], address[4], address[3],
-    //                         address[2], address[1], address[0]);
-    // ESP_LOGI(TAG, "device wiht address %s", stringBuilder.c_str());
-    // stringBuilder.reset();
-    // stringBuilder.hexencode(pEvent->disc.data, pEvent->disc.length_data);
-    // ESP_LOGI(TAG, " => data = %s", stringBuilder.c_str()); 
+    auto address = BleAddress::from48BitLe(pEvent->disc.addr.val, pEvent->disc.addr.type);
+    
+    auto iter = mDiscoveredDevices.find(address);
+    std::shared_ptr<BleDeviceInfo> deviceInfo;
+    if(iter != std::end(mDiscoveredDevices)) {
+        deviceInfo = iter->second;
+    } else {
+        deviceInfo = std::make_shared<BleDeviceInfo>();
+        deviceInfo->address(address);    
+    }
     
     struct ble_hs_adv_fields fields;
     int rc = ble_hs_adv_parse_fields(&fields, pEvent->disc.data, pEvent->disc.length_data);
@@ -123,9 +121,26 @@ void BleDeviceDiscoveryAgent::onDiscover(struct ble_gap_event* pEvent) {
             fields.svc_data_uuid128+BleUuid::cNumBytes128, 
             fields.svc_data_uuid128_len-BleUuid::cNumBytes128);
     }
-    mOnDiscover(deviceInfo); 
+    mDiscoveredDevices.insert({deviceInfo->address(),deviceInfo});
+    if(mOnDiscover) {
+        mOnDiscover(deviceInfo); 
+    } 
 }
 
+void BleDeviceDiscoveryAgent::onDiscoverComplete(struct ble_gap_event* pEvent) {
+    int reason = pEvent->disc_complete.reason;
+    if(reason != 0) {
+        ESP_LOGE(TAG, "discovery completed with failure reason: %d", reason);
+    }
+    std::vector<std::shared_ptr<BleDeviceInfo>> discoveredDevices;
+    std::transform(std::begin(mDiscoveredDevices),std::end(mDiscoveredDevices), 
+        std::back_inserter(discoveredDevices),
+        [](auto iter){return iter.second;});
+
+    if(mOnDiscoverComplete) {
+        mOnDiscoverComplete(discoveredDevices); 
+    } 
+}
 
 
 } // namespace Bluetooth

@@ -24,8 +24,11 @@ class BleAddress
       BleAddress();
       ~BleAddress();
 
-      static BleAddress from48BitLe(const uint8_t* pAddress);
-      static BleAddress from48BitLe(const Address48Bit& pAddress); 
+      static BleAddress from48BitLe(const uint8_t* pAddress, uint8_t  pType = 0);
+      static BleAddress from48BitLe(const Address48Bit& pAddress, uint8_t  pType = 0); 
+
+      void to48BitLe(uint8_t pAddress[], uint8_t* pType = nullptr) const;
+      template<typename T> void to(T& pT) const { to48BitLe(pT.val, &pT.type);} 
 
       bool isEmpty() const;
 
@@ -36,7 +39,9 @@ class BleAddress
       std::string toString() const;
 
    private:
+      uint8_t  mType;
       Address48Bit mRaw;
+      
       
 };
 

@@ -1,5 +1,6 @@
 idf_component_register(
 	SRCS 
+		"src/Bt/Bluetooth/BleClient.cpp"
 		"src/Bt/Bluetooth/BleController.cpp"
 		"src/Bt/Bluetooth/BleDeviceDiscoveryAgent.cpp"
 		"src/Bt/Core/Time.cpp"

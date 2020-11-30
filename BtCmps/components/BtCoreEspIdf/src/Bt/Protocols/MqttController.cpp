@@ -6,6 +6,7 @@
 
 #include "Bt/Protocols/MqttController.h"
 
+#include <algorithm>
 #include <stdexcept>
 #include <vector>
 

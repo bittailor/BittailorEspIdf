@@ -79,6 +79,8 @@ namespace :build do
     task :target do
         build_target_folders.each do |folder| 
             Dir.chdir(folder) do  
+                puts 
+                puts "** #{folder} **"
                 sh "pwd"  
                 idf_sh "idf.py build"
             end
@@ -88,6 +90,8 @@ namespace :build do
     task :host do 
         build_host_folders.each do |folder|
             Dir.chdir(folder) do
+                puts 
+                puts "** #{folder} **"
                 sh "pwd"    
                 sh 'mkdir -p build'
                 Dir.chdir('build') do 

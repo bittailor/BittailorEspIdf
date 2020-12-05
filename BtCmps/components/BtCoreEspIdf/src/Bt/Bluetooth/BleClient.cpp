@@ -39,7 +39,6 @@ namespace {
                     return pError->status;
                 }
                 mService = std::make_shared<Bluetooth::BleService>(mBleClient, *pService);
-                
                 return ESP_OK;
             }
 

@@ -8,6 +8,7 @@
 
 #include <Bt/Core/StringUtilities.h>
 #include <Bt/Bluetooth/BleUuid.h>
+#include <Bt/Bluetooth/Utilities.h>
 
 #include "Bt/Bluetooth/BleCharacteristic.h"
 
@@ -76,8 +77,8 @@ bool BleService::getCharacteristic(const BleUuid& pCharacteristicUuid, OnCharact
 
 std::string BleService::toString() const {
     return Core::stringPrintf("BleService startHandle=%d endHandle=%d Uuid=%s",  
-    mService.start_handle, mService.end_handle, 
-    BleUuid::from128BitLE(mService.uuid.u128.value).toString().c_str());        
+    mService.start_handle, mService.end_handle,
+    toBleUuid(mService.uuid).toString().c_str());        
 }
 
 int BleService::onCharacteristicDiscoverStatic(uint16_t pConnHandle, const ble_gatt_error* pError, const ble_gatt_chr* pCharacteristic, void* pArg) {

@@ -75,8 +75,8 @@ BleCharacteristic::~BleCharacteristic() {
 
 std::string BleCharacteristic::toString() const {
     return Core::stringPrintf("BleService def_handle=%d val_handle=%d properties=%d Uuid=%s",  
-    mCharacteristic.def_handle, mCharacteristic.val_handle, (int)mCharacteristic.properties, 
-    BleUuid::from128BitLE(mCharacteristic.uuid.u128.value).toString().c_str());
+    mCharacteristic.def_handle, mCharacteristic.val_handle, (int)mCharacteristic.properties,
+    toBleUuid(mCharacteristic.uuid).toString().c_str());
 }
 
 bool BleCharacteristic::subscribe(OnSubscribe pOnSubscribe) {

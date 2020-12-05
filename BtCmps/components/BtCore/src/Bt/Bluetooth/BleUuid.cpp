@@ -139,14 +139,8 @@ BleUuid BleUuid::from128BitLE(const uint8_t* pUuid) {
   return from128BitLE(tmp);
 }
 
-const Uuid128Bit BleUuid::to128BitLE() const {
-  Uuid128Bit le;
-  std::reverse_copy(mRaw.data(), mRaw.data() + cNumBytes128, le.begin());
-  return le;
-}
-
-const Uuid128Bit& BleUuid::to128BitBE() const { 
-  return mRaw; 
+void BleUuid::to128BitLE(uint8_t* pRaw) const {
+  std::reverse_copy(mRaw.data(), mRaw.data() + cNumBytes128, pRaw);
 }
 
 bool BleUuid::isEmpty() const { 

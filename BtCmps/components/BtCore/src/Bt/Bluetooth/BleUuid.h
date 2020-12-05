@@ -51,8 +51,7 @@ class BleUuid final {
   }
   static BleUuid from128BitLE(const Uuid128Bit& pUuid);
   static BleUuid from128BitLE(const uint8_t* pUuid);
-  const Uuid128Bit to128BitLE() const;
-  const Uuid128Bit& to128BitBE() const;
+  void to128BitLE(uint8_t* pRaw) const;
   
   std::string toString() const;
   

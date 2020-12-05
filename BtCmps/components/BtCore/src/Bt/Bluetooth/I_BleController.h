@@ -20,7 +20,7 @@ class I_BleController {
       struct Synced{};
       virtual ~I_BleController() {}
       virtual std::shared_ptr<I_BleDeviceDiscoveryAgent>  createDeviceDiscoveryAgent(I_BleDeviceDiscoveryAgent::OnDiscover pOnDiscover = nullptr,I_BleDeviceDiscoveryAgent::OnDiscoverComplete pOnDiscoverComplete = nullptr) = 0;
-      virtual std::shared_ptr<I_BleClient>  createClient() = 0;
+      virtual std::shared_ptr<I_BleClient>  createClient(I_BleClient::I_Listener& pI_Listener) = 0;
 };
 
 } // namespace Bluetooth

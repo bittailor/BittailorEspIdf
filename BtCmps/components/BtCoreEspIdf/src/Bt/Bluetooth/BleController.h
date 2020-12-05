@@ -21,7 +21,7 @@ class BleController : public I_BleController
       ~BleController();
 
       virtual std::shared_ptr<I_BleDeviceDiscoveryAgent>  createDeviceDiscoveryAgent(I_BleDeviceDiscoveryAgent::OnDiscover pOnDiscover = nullptr,I_BleDeviceDiscoveryAgent::OnDiscoverComplete pOnDiscoverComplete = nullptr);
-      virtual std::shared_ptr<I_BleClient>  createClient();
+      virtual std::shared_ptr<I_BleClient>  createClient(I_BleClient::I_Listener& pI_Listener);
       
    private:
       static void onHostResetStatic(int pReason);

@@ -26,6 +26,7 @@
 #include <Bt/Protocols/SntpController.h>
 #include <Bt/Storage/NvsRepository.h>
 #include <Bt/Storage/VirtualFilesystem.h>
+#include <Bt/Xiaomi/Gateway.h>
 
 constexpr const char* TAG = "Main";
 Bt::Concurrency::CountdownLatch sMainExitLatch(1);
@@ -64,126 +65,18 @@ void executionContext(void* pContext)
    Bt::Bluetooth::BleController bleController;
    
    Bt::Devices::Xiaomi::DeviceFactory mXiaomiDeviceFactory;
-   Bt::Devices::Xiaomi::HumiditySensor::registerAtFactory(mXiaomiDeviceFactory, bleController) ;
+   Bt::Devices::Xiaomi::HumiditySensor::registerAtFactory(mainExecutionContext, mXiaomiDeviceFactory, bleController) ;
    Bt::Devices::Xiaomi::BleDiscoveryAgent xiaomiBleDiscoveryAgent(bleController);
 
-   //std::vector<std::shared_ptr<Bt::Devices::Xiaomi::I_Device>> xiaomiDevices;
-   std::queue<std::shared_ptr<Bt::Devices::Xiaomi::I_Device>> xiaomiDevicesToConnect;
-   std::queue<std::shared_ptr<Bt::Devices::Xiaomi::I_Device>> xiaomiDevicesConnected;
-
-
-   std::function<void()> connectNextDevice = [&mainExecutionContext,&xiaomiDevicesToConnect,&xiaomiDevicesConnected,&connectNextDevice](){
-      if(xiaomiDevicesToConnect.empty()){
-         return;
-      }   
-      auto device = xiaomiDevicesToConnect.front();
-      if(device->connect()){
-         xiaomiDevicesConnected.push(device);
-         xiaomiDevicesToConnect.pop();  
-      }
-      mainExecutionContext.callOnce(std::chrono::seconds(10),connectNextDevice);
-   };
-
-   int counter = 0;
-   std::function<void()> startScan = [&counter, &time, &mainExecutionContext, &mqttController, &mXiaomiDeviceFactory, &xiaomiDevicesToConnect, &connectNextDevice, &xiaomiBleDiscoveryAgent](){
-      counter++;
-      ESP_LOGI(TAG, "startScan counter = %d", counter);
-      if(counter < 2) {
-         return;
-      }
-      ESP_LOGI(TAG, "start discover");
-      xiaomiBleDiscoveryAgent.discoverBleDevices(std::chrono::seconds(20),
-         [&time, &mainExecutionContext, &mqttController, &mXiaomiDeviceFactory, &xiaomiDevicesToConnect, &connectNextDevice](auto&& pDevices){
-            ESP_LOGI(TAG, "discover completed %zu devices", pDevices.size());
-            mainExecutionContext.call([&time, &mainExecutionContext, &mqttController, &mXiaomiDeviceFactory, &xiaomiDevicesToConnect, &connectNextDevice, pDevices](){
-               // int delay = 5;
-               for (auto device : pDevices)
-               {                
-                  auto xiaomiDevice = mXiaomiDeviceFactory.createDevice(device);
-                  xiaomiDevicesToConnect.push(xiaomiDevice);
-                  
-                  // mainExecutionContext.callOnce(std::chrono::seconds(delay),[device,xiaomiDevice](){
-                  //    printf("\n");
-                  //    printf("\n");
-                  //    ESP_LOGI(TAG, "connect to => %s", device->address().toString().c_str());           
-                  //    xiaomiDevice->connect(); 
-                  // });
-                  // delay += 10;
-               }
-               mainExecutionContext.callOnce(std::chrono::seconds(5),connectNextDevice);
-               
-               
-               
-               // if(pDevices.size() > 0) {
-               //    auto xiaomiDevice = mXiaomiDeviceFactory.createDevice(pDevices[0]);
-               //    xiaomiDevices.push_back(xiaomiDevice);
-               //    xiaomiDevice->connect();
-               // }
-               
-               /*
-               {
-                  DynamicJsonDocument doc(1024);
-                  Bt::Core::StringBuilder<200> builder;          
-                  for (auto device : pDevices)
-                  {
-                     builder.reset().hexencode(device->serviceData());
-                     doc[device->address().toString()].set(builder.c_str()); 
-                  } 
-                  mqttController.publish("bittailor/home/sensor/mijia/discover", doc.as<std::string>());
-               }
-               {
-                  DynamicJsonDocument doc(1024);
-                  auto heap = doc.createNestedObject("heap");          
-                  heap["free"].set(esp_get_free_heap_size());
-                  heap["min"].set(esp_get_minimum_free_heap_size());
-                  heap["block"].set(heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));               
-                  doc["uptime"].set(time.milliseconds());
-                  mqttController.publish("bittailor/home/gateway/health", doc.as<std::string>());
-               }
-               
-               mainExecutionContext.callOnce(std::chrono::seconds(2), startScan); 
-               */
-
-            });
-         });
-
-      /*
-      auto discoveryAgent = new Bt::Bluetooth::BleDeviceDiscoveryAgent(
-         [&mainExecutionContext, &mqttController](auto pDeviceInfo){
-            if(!pDeviceInfo->serviceUuid().isEmpty() && pDeviceInfo->serviceUuid() == 0xfe95 ) {
-               ESP_LOGI(TAG, "DeviceInfo with serviceUuid %s address %s",
-                  pDeviceInfo->serviceUuid().toString().c_str(),
-                  pDeviceInfo->address().toString().c_str());   
-               mainExecutionContext.call([&mqttController, pDeviceInfo](){
-                  mqttController.publish("bittailor/home/sensor/mijia/discover", pDeviceInfo->address().toString());    
-               }); 
-            }
-         },
-         [&mainExecutionContext, &startScan](auto devices){
-            ESP_LOGI(TAG, "discover completed %zu devices", devices.size());
-            mainExecutionContext.callOnce(std::chrono::seconds(2), startScan);   
-         }
-      );
-
-      discoveryAgent->interval(std::chrono::milliseconds(35));
-      discoveryAgent->window(std::chrono::milliseconds(20));
-      discoveryAgent->duplicateFilter(true);
-      discoveryAgent->start(std::chrono::seconds(20));
-      */
-   };
-
-
-   Bt::Events::Subscription<Bt::Bluetooth::I_BleController::Synced> onBleSynced(mainExecutionContext,[&startScan](auto pEvent){
-      ESP_LOGI(TAG, "onBleSynced");
-      startScan();
+   /*
+   Bt::Events::Subscription<Bt::Bluetooth::I_BleController::Synced> onBleSynced(mainExecutionContext,[](auto pEvent){
+      ESP_LOGI(TAG, "ble_gatts_show_local:");
+      ble_gatts_show_local();
    });
-   Bt::Events::Subscription<Bt::Protocols::I_MqttController::Connected> onMqttConnected(mainExecutionContext,[&startScan](auto pEvent){
-      ESP_LOGI(TAG, "onMqttConnected");
-      startScan();
-   });
-
-
+   */
   
+   Bt::Xiaomi::Gateway xiaomiGateway(mainExecutionContext, bleController);   
+
 
    ESP_LOGI(TAG, "Run:");
    ESP_LOGI(TAG, " - Free memory : %d bytes", esp_get_free_heap_size());
@@ -191,6 +84,10 @@ void executionContext(void* pContext)
 
    mainExecutionContext.run();
 }
+
+
+
+
 
 extern "C" void app_main(void) {
    esp_log_level_set("*", ESP_LOG_INFO);

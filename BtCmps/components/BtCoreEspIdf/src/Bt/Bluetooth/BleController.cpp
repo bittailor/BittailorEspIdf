@@ -65,8 +65,8 @@ std::shared_ptr<I_BleDeviceDiscoveryAgent>  BleController::createDeviceDiscovery
     return std::make_shared<BleDeviceDiscoveryAgent>(pOnDiscover, pOnDiscoverComplete);
 }
 
-std::shared_ptr<I_BleClient>  BleController::createClient() {
-    return std::make_shared<BleClient>();
+std::shared_ptr<I_BleClient>  BleController::createClient(I_BleClient::I_Listener& pI_Listener) {
+    return std::make_shared<BleClient>(pI_Listener);
 }
 
 void BleController::onHostReset(int pReason) {

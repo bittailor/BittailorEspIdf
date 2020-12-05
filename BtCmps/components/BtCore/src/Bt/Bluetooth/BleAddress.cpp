@@ -42,6 +42,20 @@ BleAddress BleAddress::from48BitLe(const Address48Bit& pAddress, uint8_t  pType)
   return address;
 }
 
+BleAddress BleAddress::from48BitBe(const uint8_t* pAddress, uint8_t  pType){
+  BleAddress address;
+  address.mType = pType;
+  std::copy(pAddress, pAddress + cNumBytes, address.mRaw.begin()); 
+  return address;     
+}
+
+BleAddress BleAddress::from48BitBe(const Address48Bit& pAddress, uint8_t  pType) {
+  BleAddress address;
+  address.mType = pType;
+  address.mRaw = pAddress; 
+  return address;     
+}
+
 void BleAddress::to48BitLe(uint8_t pAddress[], uint8_t* pType) const {
   pAddress[5] = mRaw[0];
   pAddress[4] = mRaw[1];
@@ -53,6 +67,8 @@ void BleAddress::to48BitLe(uint8_t pAddress[], uint8_t* pType) const {
     *pType = mType;
   }
 }
+
+
 
 bool BleAddress::isEmpty() const { 
   return *this == cEmpty; 

@@ -31,17 +31,17 @@ class BleClient : public I_BleClient
 
       virtual bool connect(const BleAddress& pAddress);
 
-      virtual bool getService(const BleUuid& pServiceUuid);
+      virtual bool getService(const BleUuid& pServiceUuid, OnServiceDiscover pOnOnServiceDiscover);
 
       I_Listener& listener() const {return mListener;}
       uint16_t connectionHandle() const {return mConnectionHandle;}
+      const std::string& addressString() const {return mAddressString;}
 
    private:
-      static int onGapEventStatic(struct ble_gap_event* pEvent, void* pArg);
-      int onGapEvent(struct ble_gap_event* pEvent);
+      static int onGapEventStatic(ble_gap_event* pEvent, void* pArg);
+      int onGapEvent(ble_gap_event* pEvent);
       
-      static int onServiceDiscoverStatic(uint16_t pConnHandle, const struct ble_gatt_error* pError, const struct ble_gatt_svc* pService, void* pArg);
-      int onServiceDiscover(uint16_t pConnHandle, const struct ble_gatt_error* pError, const struct ble_gatt_svc* pService);
+      static int onServiceDiscoverStatic(uint16_t pConnHandle, const ble_gatt_error* pError, const ble_gatt_svc* pService, void* pArg);
       
       I_Listener& mListener;
       BleAddress mAddress;

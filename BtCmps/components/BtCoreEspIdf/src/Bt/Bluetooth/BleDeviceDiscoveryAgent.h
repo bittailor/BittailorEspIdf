@@ -43,15 +43,15 @@ class BleDeviceDiscoveryAgent : public I_BleDeviceDiscoveryAgent
       virtual void duplicateFilter(bool pEnabled) {mParameters.filter_duplicates = pEnabled;}
 
    private:
-      static int onGapEventStatic(struct ble_gap_event* pEvent, void* pArg);
-      int onGapEvent(struct ble_gap_event* pEvent);
-      void onDiscover(struct ble_gap_event* pEvent);
-      void onDiscoverComplete(struct ble_gap_event* pEvent); 
+      static int onGapEventStatic(ble_gap_event* pEvent, void* pArg);
+      int onGapEvent(ble_gap_event* pEvent);
+      void onDiscover(ble_gap_event* pEvent);
+      void onDiscoverComplete(ble_gap_event* pEvent); 
 
       OnDiscover mOnDiscover;
       OnDiscoverComplete mOnDiscoverComplete;
       std::map<BleAddress,std::shared_ptr<BleDeviceInfo>> mDiscoveredDevices;
-      struct ble_gap_disc_params mParameters; 
+      ble_gap_disc_params mParameters; 
       uint8_t mOwnAddrType;
       
       

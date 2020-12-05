@@ -23,7 +23,7 @@ namespace {
    //static  NTP_SERVERS "0.ch.pool.ntp.org", "1.ch.pool.ntp.org", "pool.ntp.org"
 
    std::function<void()> sTimeSyncNotificationCallback;
-   void timeSyncNotificationCallback(struct timeval *tv)
+   void timeSyncNotificationCallback(timeval *tv)
    {
       if(sTimeSyncNotificationCallback) {
          sTimeSyncNotificationCallback();

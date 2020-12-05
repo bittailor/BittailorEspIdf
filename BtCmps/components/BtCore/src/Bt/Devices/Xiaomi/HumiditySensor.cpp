@@ -62,7 +62,9 @@ bool HumiditySensor::connect() {
 void HumiditySensor::onConnect() {
     ESP_LOGI(TAG, "[%s]  onConnect", mAddress.toString().c_str()); 
     mExecutionContext.call([this](){
-        mBleClient->getService(cServiceUuid);    
+        mBleClient->getService(cServiceUuid,[this](auto pService){
+            onServiceDiscover(pService);
+        });    
     });
 }
 
@@ -74,7 +76,9 @@ void HumiditySensor::onServiceDiscover(BleService pService) {
     ESP_LOGI(TAG, "[%s] onServiceDiscover : %s", mAddress.toString().c_str(), pService->toString().c_str());
     mService = pService;
     mExecutionContext.call([this](){
-        mService->getCharacteristic(sTemperatureAndHumidityCharacteristicUUID); 
+        mService->getCharacteristic(sTemperatureAndHumidityCharacteristicUUID, [this](auto pCharacteristic){
+            onCharacteristicDiscover(pCharacteristic);    
+        }); 
     });    
 }
 
@@ -83,7 +87,7 @@ void HumiditySensor::onCharacteristicDiscover(BleCharacteristic pCharacteristic)
     mTemperatureAndHumidityCharacteristic = pCharacteristic;  
     mExecutionContext.call([this](){
         mTemperatureAndHumidityCharacteristic->subscribe([](){
-            
+
         }); 
     });  
 }

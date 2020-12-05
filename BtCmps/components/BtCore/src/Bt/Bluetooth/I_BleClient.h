@@ -8,6 +8,7 @@
 #define INC__Bt_Bluetooth_I_BleClient__h
 
 #include <memory>
+#include <functional>
 
 #include "Bt/Bluetooth/BleAddress.h"
 #include "Bt/Bluetooth/BleUuid.h"
@@ -18,8 +19,14 @@ namespace Bluetooth {
 
 class I_BleClient {
    public:
+      
+
       using BleService = std::shared_ptr<I_BleService>;
       using BleCharacteristic = std::shared_ptr<I_BleCharacteristic>;
+      
+      using OnServiceDiscover = std::function<void(BleService pService)>;
+      
+      
       class I_Listener{
          public:
             using BleService = I_BleClient::BleService;
@@ -34,7 +41,7 @@ class I_BleClient {
       virtual ~I_BleClient() {}
 
       virtual bool connect(const BleAddress& pAddress) = 0;
-      virtual bool getService(const BleUuid& pServiceUuid) = 0;
+      virtual bool getService(const BleUuid& pServiceUuid, OnServiceDiscover pOnOnServiceDiscover) = 0;
 };
 
 } // namespace Bluetoosth

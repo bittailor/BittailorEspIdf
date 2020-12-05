@@ -8,7 +8,6 @@
 #define INC__Bt_Core_StringUtilities__h
 
 #include <string>
-
 namespace Bt {
 namespace Core {
 

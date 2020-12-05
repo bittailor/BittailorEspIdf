@@ -18,8 +18,12 @@ namespace Bluetooth {
 
 class I_BleService {
    public:
+      using BleCharacteristic = std::shared_ptr<I_BleCharacteristic>;
+      
+      using OnCharacteristicDiscover = std::function<void(BleCharacteristic pCharacteristic)>;
+     
       virtual ~I_BleService() {}
-      virtual  bool getCharacteristic(const BleUuid& pCharacteristicUuid) = 0; 
+      virtual  bool getCharacteristic(const BleUuid& pCharacteristicUuid, OnCharacteristicDiscover pOnCharacteristicDiscover) = 0; 
       virtual std::string toString() const = 0;
       
 };

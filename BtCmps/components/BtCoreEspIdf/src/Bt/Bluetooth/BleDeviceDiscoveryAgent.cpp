@@ -41,14 +41,14 @@ void BleDeviceDiscoveryAgent::start(std::chrono::milliseconds pDuration) {
     ESP_ERROR_CHECK(ble_gap_disc(mOwnAddrType, duration, &mParameters, &BleDeviceDiscoveryAgent::onGapEventStatic, this));
 }
 
-int BleDeviceDiscoveryAgent::onGapEventStatic(struct ble_gap_event* pEvent, void* pArg) {
+int BleDeviceDiscoveryAgent::onGapEventStatic(ble_gap_event* pEvent, void* pArg) {
     if(pArg!=nullptr) {
         return static_cast<BleDeviceDiscoveryAgent*>(pArg)->onGapEvent(pEvent);    
     }
     return ESP_ERR_INVALID_ARG;
 }
 
-int BleDeviceDiscoveryAgent::onGapEvent(struct ble_gap_event* pEvent) {
+int BleDeviceDiscoveryAgent::onGapEvent(ble_gap_event* pEvent) {
     ESP_LOGD(TAG, "onGapEvent pEvent->type=%d",pEvent->type);   
     switch (pEvent->type)
     {
@@ -64,7 +64,7 @@ int BleDeviceDiscoveryAgent::onGapEvent(struct ble_gap_event* pEvent) {
     return ESP_OK;
 }
 
-void BleDeviceDiscoveryAgent::onDiscover(struct ble_gap_event* pEvent) {
+void BleDeviceDiscoveryAgent::onDiscover(ble_gap_event* pEvent) {
     auto address = BleAddress::from48BitLe(pEvent->disc.addr.val, pEvent->disc.addr.type);
     
     auto iter = mDiscoveredDevices.find(address);
@@ -76,7 +76,7 @@ void BleDeviceDiscoveryAgent::onDiscover(struct ble_gap_event* pEvent) {
         deviceInfo->address(address);    
     }
     
-    struct ble_hs_adv_fields fields;
+    ble_hs_adv_fields fields;
     int rc = ble_hs_adv_parse_fields(&fields, pEvent->disc.data, pEvent->disc.length_data);
     if (rc != 0) {
         ESP_LOGW(TAG, "ble_hs_adv_parse_fields failed with %d", rc);
@@ -127,7 +127,7 @@ void BleDeviceDiscoveryAgent::onDiscover(struct ble_gap_event* pEvent) {
     } 
 }
 
-void BleDeviceDiscoveryAgent::onDiscoverComplete(struct ble_gap_event* pEvent) {
+void BleDeviceDiscoveryAgent::onDiscoverComplete(ble_gap_event* pEvent) {
     int reason = pEvent->disc_complete.reason;
     if(reason != 0) {
         ESP_LOGE(TAG, "discovery completed with failure reason: %d", reason);

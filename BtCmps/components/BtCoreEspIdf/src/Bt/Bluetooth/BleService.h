@@ -28,7 +28,7 @@ class BleService : public I_BleService
       BleService& operator=(const BleService&) = delete;
       ~BleService();
 
-      virtual bool getCharacteristic(const BleUuid& pCharacteristicUuid); 
+      virtual bool getCharacteristic(const BleUuid& pCharacteristicUuid, OnCharacteristicDiscover pOnCharacteristicDiscover); 
       virtual std::string toString() const;
 
       BleClient& client() const {return mClient;}
@@ -36,9 +36,8 @@ class BleService : public I_BleService
       uint16_t endHandle() const {return mService.end_handle;}
 
    private:
-      static int onCharacteristicDiscoverStatic(uint16_t pConnHandle, const struct ble_gatt_error* pError, const ble_gatt_chr* pCharacteristic, void* pArg);
-      int onCharacteristicDiscover(uint16_t pConnHandle, const struct ble_gatt_error* pError, const ble_gatt_chr* pCharacteristic);
-
+      static int onCharacteristicDiscoverStatic(uint16_t pConnHandle, const ble_gatt_error* pError, const ble_gatt_chr* pCharacteristic, void* pArg);
+      
       BleClient& mClient;
       ble_gatt_svc mService;
       

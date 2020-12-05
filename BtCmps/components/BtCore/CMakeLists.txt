@@ -3,6 +3,7 @@ idf_component_register(
 		"src/Bt/Bluetooth/BleAddress.cpp"
 		"src/Bt/Bluetooth/BleAdvertisement.cpp"
 		"src/Bt/Bluetooth/BleDeviceInfo.cpp"
+		"src/Bt/Bluetooth/BleDescriptorInfo.cpp"
 		"src/Bt/Bluetooth/BleUuid.cpp"
 		"src/Bt/Concurrency/CountingLatch.cpp"
 		"src/Bt/Core/Logging.cpp"

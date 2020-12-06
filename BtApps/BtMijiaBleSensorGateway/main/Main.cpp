@@ -27,6 +27,9 @@
 #include <Bt/Storage/NvsRepository.h>
 #include <Bt/Storage/VirtualFilesystem.h>
 #include <Bt/Xiaomi/Gateway.h>
+#include <Bt/System/Vitals.h>
+
+
 
 constexpr const char* TAG = "Main";
 Bt::Concurrency::CountdownLatch sMainExitLatch(1);
@@ -62,7 +65,9 @@ void executionContext(void* pContext)
                                                       cfg.password = CONFIG_BT_MIIJA_GATEWAY_MQTT_PASSWORD;
                                                 });
 
-   Bt::Bluetooth::BleController bleController;
+   Bt::System::Vitals vitals(mainExecutionContext,mqttController);
+
+   Bt::Bluetooth::BleController bleController(mainExecutionContext);
    
    Bt::Devices::Xiaomi::DeviceFactory mXiaomiDeviceFactory;
    Bt::Devices::Xiaomi::HumiditySensor::registerAtFactory(mainExecutionContext, mXiaomiDeviceFactory, bleController) ;
@@ -75,7 +80,7 @@ void executionContext(void* pContext)
    });
    */
   
-   Bt::Xiaomi::Gateway xiaomiGateway(mainExecutionContext, bleController);   
+   Bt::Xiaomi::Gateway xiaomiGateway(mainExecutionContext, bleController, mqttController);   
 
 
    ESP_LOGI(TAG, "Run:");

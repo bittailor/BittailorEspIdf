@@ -20,14 +20,16 @@ namespace Bluetooth {
 
 class I_BleCharacteristic {
    public:
-      using OnSubscribe = std::function<void()>;
-      using BleDescriptor = std::shared_ptr<I_BleDescriptor>;
-      using Descriptors = std::map<BleUuid,BleDescriptor>;
+      using OnSubscribe = std::function<void(uint8_t* pData, size_t pLength)>;
+      using BleDescriptorPtr = std::shared_ptr<I_BleDescriptor>;
+      using Descriptors = std::map<BleUuid,BleDescriptorPtr>;
       using OnDescriptorsDiscover = std::function<void(const Descriptors& pDescriptors)>;
 
       virtual ~I_BleCharacteristic() {}
 
       virtual bool subscribe(OnSubscribe pOnSubscribe) = 0;
+      virtual bool writeValue(uint8_t* pData, size_t pLenght) = 0;
+
       virtual std::string toString() const = 0;
 };
 

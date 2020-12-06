@@ -21,21 +21,16 @@ class I_BleClient {
    public:
       
 
-      using BleService = std::shared_ptr<I_BleService>;
-      using BleCharacteristic = std::shared_ptr<I_BleCharacteristic>;
-      
-      using OnServiceDiscover = std::function<void(BleService pService)>;
-      
+      using BleServicePtr = std::shared_ptr<I_BleService>; 
+      using OnServiceDiscover = std::function<void(BleServicePtr pService)>;
       
       class I_Listener{
          public:
-            using BleService = I_BleClient::BleService;
+            using BleServicePtr = I_BleClient::BleServicePtr;
             using BleCharacteristic = std::shared_ptr<I_BleCharacteristic>;
             virtual ~I_Listener() {}
             virtual void onConnect() = 0;
             virtual void onDisconnect() = 0;
-            virtual void onServiceDiscover(BleService pService) = 0;
-            virtual void onCharacteristicDiscover(BleCharacteristic pCharacteristic) = 0;
       };
       
       virtual ~I_BleClient() {}

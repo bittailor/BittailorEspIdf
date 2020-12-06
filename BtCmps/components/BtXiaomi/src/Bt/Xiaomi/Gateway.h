@@ -11,9 +11,10 @@
 #include <memory>
 
 #include <Bt/Bluetooth/I_BleController.h>
+#include <Bt/Concurrency/I_SchedulingExecutionContext.h>
+#include <Bt/Devices/Xiaomi/I_Device.h>
 #include <Bt/Events/Events.h>
 #include <Bt/Protocols/I_MqttController.h>
-#include <Bt/Devices/Xiaomi/I_Device.h>
 
 namespace Bt {
 namespace Xiaomi {
@@ -25,7 +26,7 @@ class Gateway
 
       template<typename E> using EventSubscription = Bt::Events::Subscription<E>;
 
-      Gateway(Concurrency::I_ExecutionContext& pExecutionContext, Bluetooth::I_BleController& pBleController);
+      Gateway(Concurrency::I_SchedulingExecutionContext& pExecutionContext, Bluetooth::I_BleController& pBleController, Protocols::I_MqttController& pMqtt);
       Gateway(const Gateway&) = delete;
       Gateway& operator=(const Gateway&) = delete;
       ~Gateway();
@@ -34,9 +35,11 @@ class Gateway
       void onBleSynced();
       void onMqttConnected();
       void onEvent();
+      void onReading(const std::string& pId, const Bt::Devices::Xiaomi::I_Device::Values& pValues);
 
-      Concurrency::I_ExecutionContext& mExecutionContext;
+      Concurrency::I_SchedulingExecutionContext& mExecutionContext;
       Bluetooth::I_BleController& mBleController;
+      Protocols::I_MqttController& mMqtt;
       EventSubscription<Bluetooth::I_BleController::Synced> mOnBleSynced;
       EventSubscription<Protocols::I_MqttController::Connected> mOnMqttConnected;
       Devices mDevices;

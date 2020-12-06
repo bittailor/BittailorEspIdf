@@ -30,7 +30,12 @@ class BleCharacteristic : public I_BleCharacteristic
       ~BleCharacteristic();
 
       virtual bool subscribe(OnSubscribe pOnSubscribe);
+      virtual bool writeValue(uint8_t* pData, size_t pLenght);
+
       BleService& service() const {return mService;}
+      uint16_t valueHandle() const {return mCharacteristic.val_handle;}
+
+      void onNotify(uint8_t* pData, size_t pLength);
       
 
       virtual std::string toString() const;
@@ -42,6 +47,7 @@ class BleCharacteristic : public I_BleCharacteristic
 
       BleService& mService;
       ble_gatt_chr mCharacteristic;
+      OnSubscribe mOnSubscribe;
       
 };
 

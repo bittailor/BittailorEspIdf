@@ -15,6 +15,7 @@
 #include "Bt/Bluetooth/BleClient.h"
 #include "Bt/Bluetooth/I_BleClient.h"
 #include "Bt/Bluetooth/I_BleService.h"
+#include "Bt/Bluetooth/Utilities.h"
 
 namespace Bt {
 namespace Bluetooth {
@@ -32,9 +33,9 @@ class BleService : public I_BleService
       virtual std::string toString() const;
 
       BleClient& client() const {return mClient;}
-
+      BleUuid uuid() const {return toBleUuid(mService.uuid);}
       uint16_t endHandle() const {return mService.end_handle;}
-
+      
    private:
       static int onCharacteristicDiscoverStatic(uint16_t pConnHandle, const ble_gatt_error* pError, const ble_gatt_chr* pCharacteristic, void* pArg);
       

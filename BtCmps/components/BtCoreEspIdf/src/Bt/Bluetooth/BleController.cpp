@@ -41,7 +41,8 @@ namespace {
 
 }
 
-BleController::BleController() {
+BleController::BleController(Concurrency::I_ExecutionContext& pExecutionContext)
+: mExecutionContext(pExecutionContext) {
     BleController* expected = nullptr;
     if(!sInstance.compare_exchange_strong(expected,this)) {
         ESP_LOGE(TAG, "Only one BleController can be instantiated 0x%p", expected);
@@ -65,8 +66,37 @@ std::shared_ptr<I_BleDeviceDiscoveryAgent>  BleController::createDeviceDiscovery
     return std::make_shared<BleDeviceDiscoveryAgent>(pOnDiscover, pOnDiscoverComplete);
 }
 
-std::shared_ptr<I_BleClient>  BleController::createClient(I_BleClient::I_Listener& pI_Listener) {
-    return std::make_shared<BleClient>(pI_Listener);
+std::shared_ptr<I_BleClient>  BleController::createClient(I_BleClient::I_Listener& pListener) {
+    return std::make_shared<BleClient>(*this, pListener);
+}
+
+void BleController::enqueConnect(std::function<void()> pConnect){
+    std::function<void()> enque = [this,pConnect](){  
+        bool empty = mConnectQueue.empty();
+        mConnectQueue.push(pConnect);
+        if(empty) {
+            ESP_LOGI(TAG, "mConnectQueue empty run connect immediately ");
+            mConnectQueue.front()();
+        } else {
+            ESP_LOGI(TAG, "mConnectQueue not empty enque connect queue.size = %zu", mConnectQueue.size());    
+        }
+    };
+    if(Concurrency::I_ExecutionContext::current() == &mExecutionContext) {
+        enque();    
+    } else {
+        mExecutionContext.call(enque);     
+    }
+
+}
+
+void BleController::dequeConnect() {
+    mExecutionContext.call([this](){   
+        mConnectQueue.pop();
+        if(!mConnectQueue.empty()){
+            ESP_LOGI(TAG, "mConnectQueue not empty run next connect queue.size = %zu", mConnectQueue.size());
+            mConnectQueue.front()();    
+        }    
+    });
 }
 
 void BleController::onHostReset(int pReason) {

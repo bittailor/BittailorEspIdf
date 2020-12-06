@@ -54,7 +54,8 @@ HumiditySensor::HumiditySensor(Concurrency::I_ExecutionContext& pExecutionContex
 HumiditySensor::~HumiditySensor() {
 }
 
-bool HumiditySensor::connect() {
+bool HumiditySensor::connect(OnReading pOnReading) {
+    mOnReading = pOnReading;
     ESP_LOGI(TAG, "connect to => %s", mAddress.toString().c_str()); 
     return mBleClient->connect(mAddress);
 }
@@ -72,7 +73,7 @@ void HumiditySensor::onDisconnect() {
     ESP_LOGI(TAG, "[%s] onDisconnect", mAddress.toString().c_str()); 
 }
 
-void HumiditySensor::onServiceDiscover(BleService pService) {
+void HumiditySensor::onServiceDiscover(BleServicePtr pService) {
     ESP_LOGI(TAG, "[%s] onServiceDiscover : %s", mAddress.toString().c_str(), pService->toString().c_str());
     mService = pService;
     mExecutionContext.call([this](){
@@ -86,10 +87,36 @@ void HumiditySensor::onCharacteristicDiscover(BleCharacteristic pCharacteristic)
     ESP_LOGI(TAG, "[%s] onCharacteristicDiscover : %s", mAddress.toString().c_str(), pCharacteristic->toString().c_str());
     mTemperatureAndHumidityCharacteristic = pCharacteristic;  
     mExecutionContext.call([this](){
-        mTemperatureAndHumidityCharacteristic->subscribe([](){
-
-        }); 
+        mTemperatureAndHumidityCharacteristic->subscribe([this](uint8_t* pData, size_t pLength){
+            onData(pData, pLength);
+        });
+        mExecutionContext.call([this](){
+            mService->getCharacteristic(sSetConnectionIntervalCharacteristicUUID, [this](BleCharacteristic pCharacteristic){
+                mExecutionContext.call([this,pCharacteristic](){     
+                    std::array<uint8_t,3> connectionInterval{0xD0,0x07, 0x00};
+                    pCharacteristic->writeValue(connectionInterval.data(), connectionInterval.size());
+                });
+            });
+        });
     });  
+}
+
+void HumiditySensor::onData(uint8_t* pData, size_t pLength) {
+    float temperature = (pData[0] | (pData[1] << 8)) * 0.01; 
+    float humidity = pData[2];
+    float battery = (pData[3] | (pData[4] << 8)) * 0.001;
+    ESP_LOGI(TAG, "[%s] temperature = %.1f : humidity = %.1f : battery = %.1f\n", mAddress.toString().c_str(), temperature, humidity, battery);
+    auto values = Values{
+        {"temperature",temperature},
+        {"humidity",humidity},
+        {"battery",battery},
+    };
+    if(mOnReading) {
+        mOnReading(mAddress.toString() ,values);
+    } else {
+        ESP_LOGW(TAG, "[%s]  mOnReading is nullptr", mAddress.toString().c_str());     
+    }
+
 }
 
 } // namespace Xiaomi

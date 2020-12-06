@@ -9,6 +9,9 @@
 #include <limits>
 
 #include <Bt/Core/StringBuilder.h>
+
+#include "Bt/Bluetooth/BleCharacteristic.h"
+#include "Bt/Bluetooth/BleController.h"
 #include "Bt/Bluetooth/BleService.h"
 
 namespace Bt {
@@ -38,19 +41,19 @@ namespace {
                     ESP_LOGE(TAG, "[%s] service discovery failed with %d", mBleClient.addressString().c_str(), pError->status);   
                     return pError->status;
                 }
-                mService = std::make_shared<Bluetooth::BleService>(mBleClient, *pService);
+                mService = mBleClient.createService(*pService);
                 return ESP_OK;
             }
 
             BleClient& mBleClient;
             I_BleClient::OnServiceDiscover mOnOnServiceDiscover;
             bool mDone;
-            std::shared_ptr<Bluetooth::BleService> mService;
+            I_BleClient::BleServicePtr mService;
     };  
 }
 
-BleClient::BleClient(I_Listener& pListener) : 
-mListener(pListener), mAddress(), mAddressString("-"), mConnectionHandle(std::numeric_limits<uint16_t>::max()) {
+BleClient::BleClient(BleController& pController, I_Listener& pListener) 
+: mController(pController), mListener(pListener), mAddress(), mAddressString("-"), mConnectionHandle(std::numeric_limits<uint16_t>::max()) {
 
 }
 
@@ -58,19 +61,21 @@ BleClient::~BleClient() {
 
 }
 
-
 bool BleClient::connect(const BleAddress& pAddress) {
     mAddress = pAddress;
     mAddressString = mAddress.toString();
+    
     uint8_t ownAddrType;
     ESP_ERROR_CHECK(ble_hs_id_infer_auto(0, &ownAddrType));
     ble_addr_t address;
     pAddress.to(address);
-    int rc = ble_gap_connect(ownAddrType, &address, cConnectTimeout, NULL, &BleClient::onGapEventStatic, this);
-    if(rc != 0 && rc != BLE_HS_EDONE) {
-        ESP_LOGW(TAG, "ble_gap_connect failed with %d", rc);
-        return false;
-    }
+    
+    mController.enqueConnect([this,ownAddrType,address](){
+        int rc = ble_gap_connect(ownAddrType, &address, cConnectTimeout, NULL, &BleClient::onGapEventStatic, this);
+        if(rc != 0 && rc != BLE_HS_EDONE) {
+            ESP_LOGW(TAG, "ble_gap_connect failed with %d", rc);
+        }
+    });
     return true;
 }
 
@@ -86,6 +91,18 @@ bool BleClient::getService(const BleUuid& pServiceUuid, OnServiceDiscover pOnOnS
         return false;
     }
     return true;
+}
+
+I_BleClient::BleServicePtr BleClient::createService(const ble_gatt_svc& pService) {
+    auto service = std::make_shared<BleService>(*this, pService);
+    mServices.insert({service->uuid(), service});
+    return service;
+}
+
+I_BleService::BleCharacteristicPtr BleClient::createCharacteristic(BleService& pService, const ble_gatt_chr& pCharacteristic) {
+    auto characteristic = std::make_shared<Bluetooth::BleCharacteristic>(pService, pCharacteristic); 
+    mCharacteristics.insert({characteristic->valueHandle(),characteristic});
+    return characteristic;
 }
 
 int BleClient::onGapEventStatic(ble_gap_event* pEvent, void* pArg) {
@@ -108,7 +125,7 @@ int BleClient::onGapEvent(ble_gap_event* pEvent) {
             if(pEvent->connect.status == 0) {
                 mConnectionHandle = pEvent->connect.conn_handle;
                 mListener.onConnect();
-
+                mController.dequeConnect();
             } else {
                 ESP_LOGE(TAG, "[%s] error: Connection failed; status=%d",
                     mAddressString.c_str(),
@@ -121,7 +138,15 @@ int BleClient::onGapEvent(ble_gap_event* pEvent) {
             ESP_LOGI(TAG, "[%s] BLE_GAP_EVENT_NOTIFY_RX %d", mAddressString.c_str(), pEvent->type);
             ESP_LOGI(TAG, "Notify Recieved for handle: %d",pEvent->notify_rx.attr_handle);
             ESP_LOGI(TAG, "  Data: %s", Core::DefaultStringBuilder().hexencode(pEvent->notify_rx.om->om_data,pEvent->notify_rx.om->om_len).c_str());
-        }
+            auto iter = mCharacteristics.find(pEvent->notify_rx.attr_handle);
+            if(iter == std::end(mCharacteristics)) {
+                ESP_LOGW(TAG, "[%s] error: handle %d not found ",mAddressString.c_str(), pEvent->notify_rx.attr_handle);
+                return ESP_OK;
+            }
+            iter->second->onNotify(pEvent->notify_rx.om->om_data,pEvent->notify_rx.om->om_len);
+
+        
+        }break;
     }
     return ESP_OK;    
 }

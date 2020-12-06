@@ -1,5 +1,24 @@
-idf_component_register(
-	SRCS 
+set(srcs
+	"src/Bt/Core/Time.cpp"
+	"src/Bt/Events/DefaultEventLoop.cpp"
+	"src/Bt/Events/EventLoopSubscription.cpp"
+	"src/Bt/Network/WiFiController.cpp"
+	"src/Bt/Peripherals/DigitalIn.cpp"
+	"src/Bt/Peripherals/DigitalOut.cpp"
+	"src/Bt/Peripherals/InterruptPushButton.cpp"
+	"src/Bt/Peripherals/PwmOut.cpp"
+	"src/Bt/Peripherals/PwmTimer.cpp"
+	"src/Bt/Peripherals/SpiDevice.cpp"
+	"src/Bt/Peripherals/SpiMaster.cpp"
+	"src/Bt/Protocols/MqttController.cpp"
+	"src/Bt/Protocols/SntpController.cpp"
+	"src/Bt/Storage/NvsRepository.cpp"
+	"src/Bt/Storage/VirtualFilesystem.cpp"
+	"src/Bt/System/Vitals.cpp"
+)
+
+if(CONFIG_BT_NIMBLE_ENABLED)
+	list(APPEND srcs 
 		"src/Bt/Bluetooth/BleCharacteristic.cpp"
 		"src/Bt/Bluetooth/BleClient.cpp"
 		"src/Bt/Bluetooth/BleController.cpp"
@@ -7,21 +26,11 @@ idf_component_register(
 		"src/Bt/Bluetooth/BleDeviceDiscoveryAgent.cpp"
 		"src/Bt/Bluetooth/BleService.cpp"
 		"src/Bt/Bluetooth/Utilities.cpp"
-		"src/Bt/Core/Time.cpp"
-		"src/Bt/Events/DefaultEventLoop.cpp"
-		"src/Bt/Events/EventLoopSubscription.cpp"
-		"src/Bt/Network/WiFiController.cpp"
-		"src/Bt/Peripherals/DigitalIn.cpp"
-		"src/Bt/Peripherals/DigitalOut.cpp"
-		"src/Bt/Peripherals/InterruptPushButton.cpp"
-		"src/Bt/Peripherals/PwmOut.cpp"
-		"src/Bt/Peripherals/PwmTimer.cpp"
-		"src/Bt/Peripherals/SpiDevice.cpp"
-		"src/Bt/Peripherals/SpiMaster.cpp"
-		"src/Bt/Protocols/MqttController.cpp"
-		"src/Bt/Protocols/SntpController.cpp"
-		"src/Bt/Storage/NvsRepository.cpp"
-		"src/Bt/Storage/VirtualFilesystem.cpp"
+	)
+endif()
+
+idf_component_register(
+	SRCS	"${srcs}" 
 	INCLUDE_DIRS "src"
-	REQUIRES driver nvs_flash mqtt spiffs BtCore bt
+	REQUIRES driver nvs_flash mqtt spiffs bt BtCore ArduinoJson
 )

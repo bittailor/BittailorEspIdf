@@ -35,18 +35,21 @@ class HumiditySensor : public I_Device, private Bt::Bluetooth::I_BleClient::I_Li
       HumiditySensor& operator=(const HumiditySensor&) = delete;
       ~HumiditySensor();
 
-      virtual bool connect();
+      virtual bool connect(OnReading pOnReading);
 
    private:
       virtual void onConnect();
       virtual void onDisconnect();
-      virtual void onServiceDiscover(BleService pService);
-      virtual void onCharacteristicDiscover(BleCharacteristic pCharacteristic);
+
+      void onServiceDiscover(BleServicePtr pService);
+      void onCharacteristicDiscover(BleCharacteristic pCharacteristic);
+      void onData(uint8_t* pData, size_t pLength);
 
       Concurrency::I_ExecutionContext& mExecutionContext;
       BleClient mBleClient;
       Bt::Bluetooth::BleAddress mAddress;
-      BleService mService;  
+      OnReading mOnReading;
+      BleServicePtr mService;  
       BleCharacteristic mTemperatureAndHumidityCharacteristic; 
       
 };

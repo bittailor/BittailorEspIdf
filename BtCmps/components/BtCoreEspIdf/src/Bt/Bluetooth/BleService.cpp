@@ -7,10 +7,9 @@
 #include "Bt/Bluetooth/BleService.h"
 
 #include <Bt/Core/StringUtilities.h>
-#include <Bt/Bluetooth/BleUuid.h>
-#include <Bt/Bluetooth/Utilities.h>
 
 #include "Bt/Bluetooth/BleCharacteristic.h"
+#include "Bt/Bluetooth/BleUuid.h"
 
 namespace Bt {
 namespace Bluetooth {
@@ -39,14 +38,14 @@ namespace {
                     ESP_LOGE(TAG, "characteristic discovery failed with %d", pError->status);   
                     return ESP_OK;
                 }
-                mCharacteristic = std::make_shared<Bluetooth::BleCharacteristic>(mBleService, *pCharacteristic);
+                mCharacteristic = mBleService.client().createCharacteristic(mBleService, *pCharacteristic);
                 return ESP_OK;
             }   
 
             BleService& mBleService;
             I_BleService::OnCharacteristicDiscover mOnCharacteristicDiscover;
             bool mDone;
-            I_BleService::BleCharacteristic mCharacteristic;
+            I_BleService::BleCharacteristicPtr mCharacteristic;
 
     };
 

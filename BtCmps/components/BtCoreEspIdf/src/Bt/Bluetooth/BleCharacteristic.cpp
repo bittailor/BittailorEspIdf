@@ -21,7 +21,8 @@ namespace Bluetooth {
 namespace {
     constexpr const char* TAG = "Bt::Bluetooth::BleCharacteristic"; 
 
-    static BleUuid cNotifyDescriptor = BleUuid::from16Bit(0x2902); 
+    static const uint16_t cCharacteristicDeclaration = 0x2803;
+    static const BleUuid cNotifyDescriptor = BleUuid::from16Bit(0x2902); 
 
     class DiscoverDescriptorsCallback {
         public:
@@ -47,11 +48,18 @@ namespace {
                 }
 
 
-
+                if(pDsc->uuid.u.type == BLE_UUID_TYPE_16 && pDsc->uuid.u16.value == uint16_t(cCharacteristicDeclaration)) {
+                    ESP_LOGI(TAG, "UUID is Characteristic Declaration => end of Characteristic definintion");
+                    mOnDescriptorsDiscover(mDescriptors);
+                    mDone = true;
+                    return BLE_HS_EDONE;
+                }
 
                 auto uuid = toBleUuid(pDsc->uuid);              
                 auto descriptor = std::make_shared<BleDescriptor>(mBleClient, BleDescriptorInfo{pDsc->handle, uuid});
-                mDescriptors.insert({uuid,descriptor});
+                if(!mDescriptors.insert({uuid,descriptor}).second) {
+                    ESP_LOGI(TAG, "insert failed for Descriptor %d => %s ", pDsc->handle, uuid.toString().c_str()); 
+                }
                 ESP_LOGI(TAG, "Descriptor %d => %s", pDsc->handle, uuid.toString().c_str()); 
                 return ESP_OK;
             }
@@ -80,7 +88,8 @@ std::string BleCharacteristic::toString() const {
 }
 
 bool BleCharacteristic::subscribe(OnSubscribe pOnSubscribe) {
-    return discoverDescriptors([](const I_BleCharacteristic::Descriptors& descriptors){
+    mOnSubscribe = pOnSubscribe;
+    bool rc = discoverDescriptors([](const I_BleCharacteristic::Descriptors& descriptors){
         auto iter = descriptors.find(cNotifyDescriptor);
         if(iter == std::end(descriptors)) {
             ESP_LOGW(TAG, "subscribe descriptors %s not found", cNotifyDescriptor.toString().c_str());
@@ -89,7 +98,28 @@ bool BleCharacteristic::subscribe(OnSubscribe pOnSubscribe) {
         uint8_t val[] = {0x01,0x00} ;
         iter->second->writeValue(val, 2);
     });
+    if(!rc) {
+        mOnSubscribe = nullptr;
+        return false;
+    }
+    return true;
+}
 
+bool BleCharacteristic::writeValue(uint8_t* pData, size_t pLenght) {
+    int rc = ble_gattc_write_no_rsp_flat(mService.client().connectionHandle(), mCharacteristic.val_handle, pData, pLenght);
+    if(rc != ESP_OK) {
+        ESP_LOGE(TAG, "writeValue failed with %d", rc); 
+        return false;
+    }
+    return true;
+}
+
+void BleCharacteristic::onNotify(uint8_t* pData, size_t pLength) {
+    if(mOnSubscribe) {
+        mOnSubscribe(pData, pLength);
+    } else {
+        ESP_LOGW(TAG, "mOnSubscribe handle is nullptr");    
+    }
 }
 
 bool BleCharacteristic::discoverDescriptors(OnDescriptorsDiscover pOnDescriptorsDiscover) {

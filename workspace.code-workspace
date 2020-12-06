@@ -87,7 +87,8 @@
 			"typeinfo": "cpp",
 			"variant": "cpp",
 			"*.ipp": "cpp",
-			"*.inc": "cpp"
+			"*.inc": "cpp",
+			"queue": "cpp"
 		}
 	}
 }

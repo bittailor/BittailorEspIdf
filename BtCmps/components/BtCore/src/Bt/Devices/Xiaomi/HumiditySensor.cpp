@@ -35,7 +35,7 @@ namespace {
 
 }
 
-void HumiditySensor::registerAtFactory(Concurrency::I_ExecutionContext& pExecutionContext, DeviceFactory& pFactory, Bt::Bluetooth::I_BleController& pBleController) {
+void HumiditySensor::registerAtFactory(Concurrency::I_SchedulingExecutionContext& pExecutionContext, DeviceFactory& pFactory, Bt::Bluetooth::I_BleController& pBleController) {
     pFactory.registerDevice(HumiditySensor::cDeviceTypeId,[&pExecutionContext,&pBleController](auto&& pDeviceInfo){
         return std::make_shared<HumiditySensor>(pExecutionContext, pBleController, pDeviceInfo);
     });   
@@ -43,12 +43,12 @@ void HumiditySensor::registerAtFactory(Concurrency::I_ExecutionContext& pExecuti
 
 
 
-HumiditySensor::HumiditySensor(Concurrency::I_ExecutionContext& pExecutionContext, Bt::Bluetooth::I_BleController& pBleController, const DeviceInfo& pDeviceInfo)
+HumiditySensor::HumiditySensor(Concurrency::I_SchedulingExecutionContext& pExecutionContext, Bt::Bluetooth::I_BleController& pBleController, const DeviceInfo& pDeviceInfo)
 : HumiditySensor(pExecutionContext, pBleController, pDeviceInfo.bleDeviceInfo()->address()) {
 }
 
-HumiditySensor::HumiditySensor(Concurrency::I_ExecutionContext& pExecutionContext, Bt::Bluetooth::I_BleController& pBleController, const Bluetooth::BleAddress& pBleAddress)
-: mExecutionContext(pExecutionContext), mBleClient(pBleController.createClient(*this)), mAddress(pBleAddress) {
+HumiditySensor::HumiditySensor(Concurrency::I_SchedulingExecutionContext& pExecutionContext, Bt::Bluetooth::I_BleController& pBleController, const Bluetooth::BleAddress& pBleAddress)
+: mExecutionContext(pExecutionContext), mBleClient(pBleController.createClient(*this)), mAddress(pBleAddress), mReconnectDelay(1) {
 }
 
 HumiditySensor::~HumiditySensor() {
@@ -61,7 +61,8 @@ bool HumiditySensor::connect(OnReading pOnReading) {
 }
 
 void HumiditySensor::onConnect() {
-    ESP_LOGI(TAG, "[%s]  onConnect", mAddress.toString().c_str()); 
+    ESP_LOGI(TAG, "[%s]  onConnect", mAddress.toString().c_str());
+    mReconnectDelay = std::chrono::seconds(1); 
     mExecutionContext.call([this](){
         mBleClient->getService(cServiceUuid,[this](auto pService){
             onServiceDiscover(pService);
@@ -70,7 +71,12 @@ void HumiditySensor::onConnect() {
 }
 
 void HumiditySensor::onDisconnect() {
-    ESP_LOGI(TAG, "[%s] onDisconnect", mAddress.toString().c_str()); 
+    ESP_LOGI(TAG, "[%s] onDisconnect => try reconnect in %" PRId64 " seconds", mAddress.toString().c_str(), mReconnectDelay.count());
+    mExecutionContext.callOnce(mReconnectDelay,[this](){
+        ESP_LOGI(TAG, "[%s] try reconnect", mAddress.toString().c_str());
+        mBleClient->connect(mAddress);
+    });
+    mReconnectDelay += std::chrono::seconds(10);
 }
 
 void HumiditySensor::onServiceDiscover(BleServicePtr pService) {
@@ -102,10 +108,10 @@ void HumiditySensor::onCharacteristicDiscover(BleCharacteristic pCharacteristic)
 }
 
 void HumiditySensor::onData(uint8_t* pData, size_t pLength) {
-    float temperature = (pData[0] | (pData[1] << 8)) * 0.01; 
+    float temperature = static_cast<int16_t>((pData[0] | (pData[1] << 8))) * 0.01; 
     float humidity = pData[2];
     float battery = (pData[3] | (pData[4] << 8)) * 0.001;
-    ESP_LOGI(TAG, "[%s] temperature = %.1f : humidity = %.1f : battery = %.1f\n", mAddress.toString().c_str(), temperature, humidity, battery);
+    ESP_LOGI(TAG, "[%s] temperature = %.1f : humidity = %.1f : battery = %.1f", mAddress.toString().c_str(), temperature, humidity, battery);
     auto values = Values{
         {"temperature",temperature},
         {"humidity",humidity},

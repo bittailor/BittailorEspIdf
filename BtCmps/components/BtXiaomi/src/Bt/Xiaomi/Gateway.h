@@ -34,7 +34,6 @@ class Gateway
    private:
       void onBleSynced();
       void onMqttConnected();
-      void onEvent();
       void onReading(const std::string& pId, const Bt::Devices::Xiaomi::I_Device::Values& pValues);
 
       Concurrency::I_SchedulingExecutionContext& mExecutionContext;
@@ -43,8 +42,7 @@ class Gateway
       EventSubscription<Bluetooth::I_BleController::Synced> mOnBleSynced;
       EventSubscription<Protocols::I_MqttController::Connected> mOnMqttConnected;
       Devices mDevices;
-      bool mBleSynced;
-      bool mMqttSynced;
+      bool mMqttConnected;
 
       
 };

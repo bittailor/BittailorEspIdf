@@ -53,7 +53,10 @@ namespace {
 }
 
 BleClient::BleClient(BleController& pController, I_Listener& pListener) 
-: mController(pController), mListener(pListener), mAddress(), mAddressString("-"), mConnectionHandle(std::numeric_limits<uint16_t>::max()) {
+: mController(pController), mListener(pListener)
+, mAddress(), mAddressString("-")
+, mClientState(ClientState::DISCONNECTED)
+, mConnectionHandle(std::numeric_limits<uint16_t>::max()) {
 
 }
 
@@ -69,11 +72,17 @@ bool BleClient::connect(const BleAddress& pAddress) {
     ESP_ERROR_CHECK(ble_hs_id_infer_auto(0, &ownAddrType));
     ble_addr_t address;
     pAddress.to(address);
-    
+    if(mClientState != ClientState::DISCONNECTED) {
+        ESP_LOGW(TAG, "[%s] client not DISCONNECTED", mAddressString.c_str());
+        return false;
+    }
+    mClientState = ClientState::CONNECTING;
     mController.enqueConnect([this,ownAddrType,address](){
         int rc = ble_gap_connect(ownAddrType, &address, cConnectTimeout, NULL, &BleClient::onGapEventStatic, this);
         if(rc != 0 && rc != BLE_HS_EDONE) {
-            ESP_LOGW(TAG, "ble_gap_connect failed with %d", rc);
+            ESP_LOGW(TAG, "[%s] ble_gap_connect failed with %d",mAddressString.c_str(), rc);
+            mController.dequeConnect();
+            mListener.onDisconnect();   
         }
     });
     return true;
@@ -86,7 +95,7 @@ bool BleClient::getService(const BleUuid& pServiceUuid, OnServiceDiscover pOnOnS
     auto callback = new ServiceDiscoverCallback(*this, pOnOnServiceDiscover);
     int rc = ble_gattc_disc_svc_by_uuid(mConnectionHandle, &uuid.u, &BleClient::onServiceDiscoverStatic, callback);
     if(rc != ESP_OK) {
-        ESP_LOGW(TAG, "ble_gattc_disc_svc_by_uuid failed with %d", rc);
+        ESP_LOGW(TAG, "[%s]ble_gattc_disc_svc_by_uuid failed with %d", mAddressString.c_str(), rc);
         delete callback;
         return false;
     }
@@ -101,6 +110,7 @@ I_BleClient::BleServicePtr BleClient::createService(const ble_gatt_svc& pService
 
 I_BleService::BleCharacteristicPtr BleClient::createCharacteristic(BleService& pService, const ble_gatt_chr& pCharacteristic) {
     auto characteristic = std::make_shared<Bluetooth::BleCharacteristic>(pService, pCharacteristic); 
+    ESP_LOGI(TAG, "[%s] Insert BleCharacteristic handle %d", mAddressString.c_str(), characteristic->valueHandle());
     mCharacteristics.insert({characteristic->valueHandle(),characteristic});
     return characteristic;
 }
@@ -113,31 +123,42 @@ int BleClient::onGapEventStatic(ble_gap_event* pEvent, void* pArg) {
 }
 
 int BleClient::onGapEvent(ble_gap_event* pEvent) {
-    ESP_LOGI(TAG, "[%s] onGapEvent pEvent->type=%d", mAddressString.c_str(), pEvent->type);
+    ESP_LOGD(TAG, "[%s] onGapEvent pEvent->type=%d", mAddressString.c_str(), pEvent->type);
     switch(pEvent->type) {
         case BLE_GAP_EVENT_DISCONNECT: {
             ESP_LOGI(TAG, "[%s] BLE_GAP_EVENT_DISCONNECT %d", mAddressString.c_str(), pEvent->type);
+            if(mClientState == ClientState::CONNECTING) {
+                mController.dequeConnect();     
+            }
+            mClientState = ClientState::DISCONNECTED;
             mListener.onDisconnect();
+            return ESP_OK;
         } break;
 
         case BLE_GAP_EVENT_CONNECT: {
-            ESP_LOGI(TAG, "[%s] BLE_GAP_EVENT_CONNECT %d", mAddressString.c_str(), pEvent->type);
+            ESP_LOGI(TAG, "[%s] BLE_GAP_EVENT_CONNECT %d conn_handle = %d", mAddressString.c_str(), pEvent->type, pEvent->connect.conn_handle);
             if(pEvent->connect.status == 0) {
                 mConnectionHandle = pEvent->connect.conn_handle;
+                mClientState = ClientState::CONNECTED;
                 mListener.onConnect();
-                mController.dequeConnect();
+                
             } else {
-                ESP_LOGE(TAG, "[%s] error: Connection failed; status=%d",
-                    mAddressString.c_str(),
-                    pEvent->connect.status);
+                ESP_LOGE(TAG, "[%s] error: Connection failed; status=%d", mAddressString.c_str(), pEvent->connect.status);
+                mClientState = ClientState::DISCONNECTED;
                 mListener.onDisconnect();
             }
+            mController.dequeConnect();
+            return ESP_OK;
         } break;
 
         case BLE_GAP_EVENT_NOTIFY_RX: {
-            ESP_LOGI(TAG, "[%s] BLE_GAP_EVENT_NOTIFY_RX %d", mAddressString.c_str(), pEvent->type);
-            ESP_LOGI(TAG, "Notify Recieved for handle: %d",pEvent->notify_rx.attr_handle);
-            ESP_LOGI(TAG, "  Data: %s", Core::DefaultStringBuilder().hexencode(pEvent->notify_rx.om->om_data,pEvent->notify_rx.om->om_len).c_str());
+            if(mConnectionHandle != pEvent->notify_rx.conn_handle) {
+                return 0;
+            }
+                
+            ESP_LOGD(TAG, "[%s] BLE_GAP_EVENT_NOTIFY_RX %d", mAddressString.c_str(), pEvent->type);
+            ESP_LOGD(TAG, "Notify Recieved for handle: %d",pEvent->notify_rx.attr_handle);
+            ESP_LOGD(TAG, "  Data: %s", Core::DefaultStringBuilder().hexencode(pEvent->notify_rx.om->om_data,pEvent->notify_rx.om->om_len).c_str());
             auto iter = mCharacteristics.find(pEvent->notify_rx.attr_handle);
             if(iter == std::end(mCharacteristics)) {
                 ESP_LOGW(TAG, "[%s] error: handle %d not found ",mAddressString.c_str(), pEvent->notify_rx.attr_handle);
@@ -145,8 +166,25 @@ int BleClient::onGapEvent(ble_gap_event* pEvent) {
             }
             iter->second->onNotify(pEvent->notify_rx.om->om_data,pEvent->notify_rx.om->om_len);
 
-        
+
+
+            return ESP_OK;
         }break;
+
+        case BLE_GAP_EVENT_L2CAP_UPDATE_REQ: {
+            ESP_LOGI(TAG, "[%s] Peer requesting to update connection parameters => just accept them", mAddressString.c_str());
+            return ESP_OK;
+        }break;
+
+         case BLE_GAP_EVENT_CONN_UPDATE: {
+            ESP_LOGI(TAG, "[%s] Connection parameters updated.", mAddressString.c_str());
+            return ESP_OK;
+        }break;
+
+
+        default: {
+            ESP_LOGW(TAG, "[%s] onGapEvent pEvent->type=%d ignored", mAddressString.c_str(), pEvent->type);
+        }break;    
     }
     return ESP_OK;    
 }

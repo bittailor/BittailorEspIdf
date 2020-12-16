@@ -37,19 +37,19 @@ namespace {
                     return ESP_OK;    
                 }
                 if(pError->status == BLE_HS_EDONE) {
-                    ESP_LOGI(TAG, "BLE_HS_EDONE");
+                    ESP_LOGI(TAG, "[%s] BLE_HS_EDONE", mBleClient.service().client().addressString().c_str());
                     mOnDescriptorsDiscover(mDescriptors);
                     mDone = true;
                     return ESP_OK;    
                 }
                 if(pError->status != ESP_OK) {
-                    ESP_LOGE(TAG, "characteristic discovery failed with %d", pError->status);   
+                    ESP_LOGE(TAG, "[%s] characteristic discovery failed with %d", mBleClient.service().client().addressString().c_str(), pError->status);   
                     return ESP_OK;
                 }
 
 
                 if(pDsc->uuid.u.type == BLE_UUID_TYPE_16 && pDsc->uuid.u16.value == uint16_t(cCharacteristicDeclaration)) {
-                    ESP_LOGI(TAG, "UUID is Characteristic Declaration => end of Characteristic definintion");
+                    ESP_LOGI(TAG, "[%s] UUID is Characteristic Declaration => end of Characteristic definintion", mBleClient.service().client().addressString().c_str());
                     mOnDescriptorsDiscover(mDescriptors);
                     mDone = true;
                     return BLE_HS_EDONE;
@@ -58,9 +58,9 @@ namespace {
                 auto uuid = toBleUuid(pDsc->uuid);              
                 auto descriptor = std::make_shared<BleDescriptor>(mBleClient, BleDescriptorInfo{pDsc->handle, uuid});
                 if(!mDescriptors.insert({uuid,descriptor}).second) {
-                    ESP_LOGI(TAG, "insert failed for Descriptor %d => %s ", pDsc->handle, uuid.toString().c_str()); 
+                    ESP_LOGI(TAG, "[%s] insert failed for Descriptor %d => %s ", mBleClient.service().client().addressString().c_str(), pDsc->handle, uuid.toString().c_str()); 
                 }
-                ESP_LOGI(TAG, "Descriptor %d => %s", pDsc->handle, uuid.toString().c_str()); 
+                ESP_LOGI(TAG, "[%s] Descriptor %d => %s", mBleClient.service().client().addressString().c_str(), pDsc->handle, uuid.toString().c_str()); 
                 return ESP_OK;
             }
 
@@ -82,19 +82,20 @@ BleCharacteristic::~BleCharacteristic() {
 }
 
 std::string BleCharacteristic::toString() const {
-    return Core::stringPrintf("BleService def_handle=%d val_handle=%d properties=%d Uuid=%s",  
+    return Core::stringPrintf("[%s] def_handle=%d val_handle=%d properties=%d Uuid=%s", mService.client().addressString().c_str(),  
     mCharacteristic.def_handle, mCharacteristic.val_handle, (int)mCharacteristic.properties,
     toBleUuid(mCharacteristic.uuid).toString().c_str());
 }
 
 bool BleCharacteristic::subscribe(OnSubscribe pOnSubscribe) {
     mOnSubscribe = pOnSubscribe;
-    bool rc = discoverDescriptors([](const I_BleCharacteristic::Descriptors& descriptors){
+    bool rc = discoverDescriptors([this](const I_BleCharacteristic::Descriptors& descriptors){
         auto iter = descriptors.find(cNotifyDescriptor);
         if(iter == std::end(descriptors)) {
-            ESP_LOGW(TAG, "subscribe descriptors %s not found", cNotifyDescriptor.toString().c_str());
+            ESP_LOGW(TAG, "[%s] subscribe descriptors %s not found", mService.client().addressString().c_str(), cNotifyDescriptor.toString().c_str());
             return;
         }
+        ESP_LOGI(TAG, "[%s] subscribe to characteristic %d", mService.client().addressString().c_str() , mCharacteristic.val_handle);
         uint8_t val[] = {0x01,0x00} ;
         iter->second->writeValue(val, 2);
     });
@@ -108,7 +109,7 @@ bool BleCharacteristic::subscribe(OnSubscribe pOnSubscribe) {
 bool BleCharacteristic::writeValue(uint8_t* pData, size_t pLenght) {
     int rc = ble_gattc_write_no_rsp_flat(mService.client().connectionHandle(), mCharacteristic.val_handle, pData, pLenght);
     if(rc != ESP_OK) {
-        ESP_LOGE(TAG, "writeValue failed with %d", rc); 
+        ESP_LOGE(TAG, "[%s] writeValue failed with %d", mService.client().addressString().c_str(), rc); 
         return false;
     }
     return true;
@@ -118,7 +119,7 @@ void BleCharacteristic::onNotify(uint8_t* pData, size_t pLength) {
     if(mOnSubscribe) {
         mOnSubscribe(pData, pLength);
     } else {
-        ESP_LOGW(TAG, "mOnSubscribe handle is nullptr");    
+        ESP_LOGW(TAG, "[%s] mOnSubscribe handle is nullptr", mService.client().addressString().c_str());    
     }
 }
 
@@ -127,7 +128,7 @@ bool BleCharacteristic::discoverDescriptors(OnDescriptorsDiscover pOnDescriptors
     
     int rc = ble_gattc_disc_all_dscs(mService.client().connectionHandle(), mCharacteristic.val_handle, mService.endHandle(), &BleCharacteristic::onDiscoverDescriptorsStatic, callback);
     if (rc != ESP_OK) {
-        ESP_LOGW(TAG, "ble_gattc_disc_all_dscs failed with %d", rc);
+        ESP_LOGW(TAG, "[%s] ble_gattc_disc_all_dscs failed with %d", mService.client().addressString().c_str(), rc);
         delete callback;
         return false;
     }

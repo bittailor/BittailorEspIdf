@@ -44,6 +44,7 @@ class BleClient : public I_BleClient
       I_BleService::BleCharacteristicPtr createCharacteristic(BleService& pService, const ble_gatt_chr& pCharacteristic);
 
    private:
+      enum class ClientState {DISCONNECTED, CONNECTING, CONNECTED};
 
       static int onGapEventStatic(ble_gap_event* pEvent, void* pArg);
       int onGapEvent(ble_gap_event* pEvent);
@@ -54,6 +55,7 @@ class BleClient : public I_BleClient
       I_Listener& mListener;
       BleAddress mAddress;
       std::string mAddressString;
+      ClientState mClientState;
       uint16_t mConnectionHandle;
       std::map<BleUuid,std::shared_ptr<BleService>> mServices;
       std::map<uint16_t,std::shared_ptr<BleCharacteristic>> mCharacteristics;

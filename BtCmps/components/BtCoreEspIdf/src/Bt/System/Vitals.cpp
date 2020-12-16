@@ -6,7 +6,7 @@
 
 #include "Bt/System/Vitals.h"
 
-#include <esp_heap_caps.h>
+//#include <esp_heap_caps.h>
 #include <esp_system.h>
 #include <esp_timer.h>
 

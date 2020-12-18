@@ -8,9 +8,12 @@
 #define INC__Bt_Bluetooth_BleController__h
 
 #include <queue>
+#include <list>
 
 #include <Bt/Bluetooth/I_BleController.h>
 #include <Bt/Concurrency/I_ExecutionContext.h>
+
+#include "Bt/Bluetooth/BleClient.h"
 
 namespace Bt {
 namespace Bluetooth {
@@ -30,14 +33,18 @@ class BleController : public I_BleController
       void dequeConnect();
       
    private:
+      enum class State {OUT_OF_SYNC, IN_SYNC};
+
       static void onHostResetStatic(int pReason);
       static void onHostAndControllerSyncedStatic(); 
 
       void onHostReset(int pReason);
       void onHostAndControllerSynced(); 
 
+      State mState;
       Concurrency::I_ExecutionContext& mExecutionContext;
       std::queue<std::function<void()>> mConnectQueue;
+      std::list<std::weak_ptr<BleClient>> mClients;
 };
 
 } // namespace Bluetooth

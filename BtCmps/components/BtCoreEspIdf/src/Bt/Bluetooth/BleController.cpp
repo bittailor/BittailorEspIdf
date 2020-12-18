@@ -20,7 +20,6 @@
 #include <Bt/Core/Logging.h>
 #include <Bt/Events/Events.h>
 
-#include "Bt/Bluetooth/BleClient.h"
 #include "Bt/Bluetooth/BleDeviceDiscoveryAgent.h"
 
 extern "C" void ble_store_config_init(void);
@@ -38,11 +37,10 @@ namespace {
         nimble_port_run();
         nimble_port_freertos_deinit();
     }
-
 }
 
 BleController::BleController(Concurrency::I_ExecutionContext& pExecutionContext)
-: mExecutionContext(pExecutionContext) {
+: mState(State::OUT_OF_SYNC), mExecutionContext(pExecutionContext) {
     BleController* expected = nullptr;
     if(!sInstance.compare_exchange_strong(expected,this)) {
         ESP_LOGE(TAG, "Only one BleController can be instantiated 0x%p", expected);
@@ -56,41 +54,42 @@ BleController::BleController(Concurrency::I_ExecutionContext& pExecutionContext)
 
     ble_store_config_init();
     nimble_port_freertos_init(blecent_host_task);
-    
 }
 
 BleController::~BleController() {
 }
 
 std::shared_ptr<I_BleDeviceDiscoveryAgent>  BleController::createDeviceDiscoveryAgent(I_BleDeviceDiscoveryAgent::OnDiscover pOnDiscover, I_BleDeviceDiscoveryAgent::OnDiscoverComplete pOnDiscoverComplete) {
-    return std::make_shared<BleDeviceDiscoveryAgent>(pOnDiscover, pOnDiscoverComplete);
+    return  std::make_shared<BleDeviceDiscoveryAgent>(pOnDiscover, pOnDiscoverComplete);
 }
 
 std::shared_ptr<I_BleClient>  BleController::createClient(I_BleClient::I_Listener& pListener) {
-    return std::make_shared<BleClient>(*this, pListener);
+    mClients.remove_if([](auto&& client){return client.expired();});
+    auto client =  std::make_shared<BleClient>(*this, pListener);
+    mClients.push_back(client);
+    return client;
+
 }
 
 void BleController::enqueConnect(std::function<void()> pConnect){
-    std::function<void()> enque = [this,pConnect](){  
+    mExecutionContext.ensureCallOnContext([this,pConnect](){  
         bool empty = mConnectQueue.empty();
         mConnectQueue.push(pConnect);
+        if(mState == State::OUT_OF_SYNC) {
+            ESP_LOGI(TAG, "connect while OUT_OF_SYNC => just queued it, queue.size = %zu", mConnectQueue.size());
+            return;
+        }
         if(empty) {
             ESP_LOGI(TAG, "mConnectQueue empty run connect immediately ");
             mConnectQueue.front()();
         } else {
             ESP_LOGI(TAG, "mConnectQueue not empty enque connect queue.size = %zu", mConnectQueue.size());    
         }
-    };
-    if(Concurrency::I_ExecutionContext::current() == &mExecutionContext) {
-        enque();    
-    } else {
-        mExecutionContext.call(enque);     
-    }
-
+    });
 }
 
 void BleController::dequeConnect() {
-    mExecutionContext.call([this](){   
+    mExecutionContext.ensureCallOnContext([this](){   
         mConnectQueue.pop();
         if(!mConnectQueue.empty()){
             ESP_LOGI(TAG, "mConnectQueue not empty run next connect queue.size = %zu", mConnectQueue.size());
@@ -100,10 +99,28 @@ void BleController::dequeConnect() {
 }
 
 void BleController::onHostReset(int pReason) {
+    mExecutionContext.ensureCallOnContext([this](){
+        mState = State::OUT_OF_SYNC;
+        for (auto &&weakClient : mClients)
+        {
+            if (auto client = weakClient.lock()) {
+                ESP_LOGI(TAG, "send disconnect because of reset to %s", client->addressString().c_str());
+                client->listener().onDisconnect();
+            }
+        }
+        mClients.clear();
+    });        
 }
 
 void BleController::onHostAndControllerSynced() {
-    Events::publish(I_BleController::Synced{});
+    mExecutionContext.ensureCallOnContext([this](){
+        mState = State::IN_SYNC;
+        if(!mConnectQueue.empty()) {
+            ESP_LOGI(TAG, "connect queue not empty on IN_SYNC => run connect, queue.size = %zu", mConnectQueue.size());
+            mConnectQueue.front()();
+        }
+        Events::publish(I_BleController::Synced{});
+    });
 }
 
 void BleController::onHostResetStatic(int pReason) {

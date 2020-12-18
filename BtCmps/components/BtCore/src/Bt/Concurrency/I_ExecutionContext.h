@@ -23,6 +23,7 @@ class I_ExecutionContext {
       virtual ~I_ExecutionContext() {}
       
       virtual void call(std::function<void()> pFunction) = 0;
+      virtual void ensureCallOnContext(std::function<void()> pFunction);
 
       template<typename Fn, typename... Args>
       std::future<typename std::result_of<Fn(Args...)>::type> callTask(Fn&& pFunction, Args&&... pArgs) {

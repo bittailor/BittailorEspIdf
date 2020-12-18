@@ -10,6 +10,7 @@
 
 #include <catch.hpp>
 
+#include <atomic>
 #include <future>
 #include <stdexcept>
 
@@ -85,6 +86,48 @@ TEST_CASE("LoopExecutionContextTest::checkExecutionBothOnThisThread", "[LoopExec
    executionContext.loop();
 
    REQUIRE(future1.get() == future2.get());
+}
+
+TEST_CASE("LoopExecutionContextTest::ensureCallOnContextCallFromOtherContext", "[LoopExecutionContextTest][Concurrency]") {
+   Core::TimeStub timeStub;
+   LoopExecutionContext executionContext(timeStub, std::chrono::milliseconds(1));
+   std::atomic<bool> executed = false;
+   std::atomic<I_ExecutionContext*> executedOn = nullptr;
+
+   
+   executionContext.ensureCallOnContext([&executed,&executedOn](){
+      executed = true;
+      executedOn = I_ExecutionContext::current();
+   });
+
+   REQUIRE(executed == false);
+ 
+   executionContext.loop();
+
+   REQUIRE(executed == true);
+   REQUIRE(executedOn == &executionContext);
+}
+
+TEST_CASE("LoopExecutionContextTest::ensureCallOnContextCallFromSameContext", "[LoopExecutionContextTest][Concurrency]") {
+   Core::TimeStub timeStub;
+   LoopExecutionContext executionContext(timeStub, std::chrono::milliseconds(1));
+   std::atomic<bool> executed = false;
+   std::atomic<I_ExecutionContext*> executedOn = nullptr;
+
+   
+   executionContext.ensureCallOnContext([&executed,&executedOn,&executionContext](){
+      executionContext.ensureCallOnContext([&executed,&executedOn](){
+         executed = true;
+         executedOn = I_ExecutionContext::current();
+      });
+   });
+
+   REQUIRE(executed == false);
+ 
+   executionContext.loop();
+
+   REQUIRE(executed == true);
+   REQUIRE(executedOn == &executionContext);
 }
 
 /*

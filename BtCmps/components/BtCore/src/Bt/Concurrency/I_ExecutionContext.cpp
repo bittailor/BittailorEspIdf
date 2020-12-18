@@ -22,5 +22,13 @@ I_ExecutionContext* I_ExecutionContext::setCurrentExecutionContext(I_ExecutionCo
     return previous;    
 }
 
+void I_ExecutionContext::ensureCallOnContext(std::function<void()> pFunction) {
+    if(current() == this) {
+        pFunction();    
+    } else {
+        call(pFunction);     
+    }
+}
+
 } // namespace Concurrency
 } // namespace Bt

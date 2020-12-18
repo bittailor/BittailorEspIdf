@@ -5,5 +5,5 @@ idf_component_register(
     REQUIRES epaper BtCore BtCoreEspIdf ArduinoJson BtXiaomi
 )
 
-# spiffs_create_partition_image(default ../spiffs/default FLASH_IN_PROJECT)
+spiffs_create_partition_image(default ../spiffs/default FLASH_IN_PROJECT)
 

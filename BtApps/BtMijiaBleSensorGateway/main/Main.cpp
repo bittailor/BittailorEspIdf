@@ -60,7 +60,7 @@ void executionContext(void* pContext)
    Bt::Protocols::MqttController mqttController(defaultEventLoop,
                                                 CONFIG_BT_MIIJA_GATEWAY_MQTT_URI,
                                                 [](esp_mqtt_client_config_t& cfg){
-                                                      cfg.client_id = CONFIG_BT_MIIJA_GATEWAY_MQTT_CLIENT_ID;
+                                                      //cfg.client_id = CONFIG_BT_MIIJA_GATEWAY_MQTT_CLIENT_ID;
                                                       cfg.username = CONFIG_BT_MIIJA_GATEWAY_MQTT_USERNAME;
                                                       cfg.password = CONFIG_BT_MIIJA_GATEWAY_MQTT_PASSWORD;
                                                 });

@@ -35,6 +35,8 @@ namespace {
 
 }
 
+
+
 void HumiditySensor::registerAtFactory(Concurrency::I_SchedulingExecutionContext& pExecutionContext, DeviceFactory& pFactory, Bt::Bluetooth::I_BleController& pBleController) {
     pFactory.registerDevice(HumiditySensor::cDeviceTypeId,[&pExecutionContext,&pBleController](auto&& pDeviceInfo){
         return std::make_shared<HumiditySensor>(pExecutionContext, pBleController, pDeviceInfo);
@@ -97,12 +99,7 @@ void HumiditySensor::onCharacteristicDiscover(BleCharacteristic pCharacteristic)
             onData(pData, pLength);
         });
         mExecutionContext.call([this](){
-            mService->getCharacteristic(sSetConnectionIntervalCharacteristicUUID, [this](BleCharacteristic pCharacteristic){
-                mExecutionContext.call([this,pCharacteristic](){     
-                    std::array<uint8_t,3> connectionInterval{0xD0,0x07, 0x00};
-                    pCharacteristic->writeValue(connectionInterval.data(), connectionInterval.size());
-                });
-            });
+            updateConnectionViaServer();
         });
     });  
 }
@@ -122,7 +119,28 @@ void HumiditySensor::onData(uint8_t* pData, size_t pLength) {
     } else {
         ESP_LOGW(TAG, "[%s]  mOnReading is nullptr", mAddress.toString().c_str());     
     }
+}
 
+void HumiditySensor::updateConnectionViaClient() {
+    using namespace std::chrono_literals;
+    Bt::Bluetooth::I_BleClient::ConnectionUpdateParameters parameters;
+    parameters.mConnectionIntervalMinimum = 500ms;
+    parameters.mConnectionIntervalMaximum = 500ms;
+    parameters.mConnectionLatency = 10;
+    parameters.mSupervisionTimeout = 20000ms;
+    if(!mBleClient->updateConnection(parameters)){
+        ESP_LOGW(TAG, "[%s] update connection via client failed => try via server", mAddress.toString().c_str());
+        updateConnectionViaServer();         
+    }
+}
+
+void HumiditySensor::updateConnectionViaServer() {
+    mService->getCharacteristic(sSetConnectionIntervalCharacteristicUUID, [this](BleCharacteristic pCharacteristic){
+        mExecutionContext.call([this,pCharacteristic](){     
+            std::array<uint8_t,3> connectionInterval{0xD0,0x07, 0x00};
+            pCharacteristic->writeValue(connectionInterval.data(), connectionInterval.size());
+        });
+    });
 }
 
 } // namespace Xiaomi

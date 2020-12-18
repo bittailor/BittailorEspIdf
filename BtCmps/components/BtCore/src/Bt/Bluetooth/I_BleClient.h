@@ -7,6 +7,7 @@
 #ifndef INC__Bt_Bluetooth_I_BleClient__h
 #define INC__Bt_Bluetooth_I_BleClient__h
 
+#include <chrono>
 #include <memory>
 #include <functional>
 
@@ -20,7 +21,6 @@ namespace Bluetooth {
 class I_BleClient {
    public:
       
-
       using BleServicePtr = std::shared_ptr<I_BleService>; 
       using OnServiceDiscover = std::function<void(BleServicePtr pService)>;
       
@@ -32,11 +32,20 @@ class I_BleClient {
             virtual void onConnect() = 0;
             virtual void onDisconnect() = 0;
       };
+
+      struct ConnectionUpdateParameters {
+         std::chrono::milliseconds mConnectionIntervalMinimum;   
+         std::chrono::milliseconds mConnectionIntervalMaximum; 
+         uint16_t mConnectionLatency;  
+         std::chrono::milliseconds mSupervisionTimeout; 
+      };
       
       virtual ~I_BleClient() {}
 
       virtual bool connect(const BleAddress& pAddress) = 0;
+      virtual bool updateConnection(const ConnectionUpdateParameters& pParameters)=0;
       virtual bool getService(const BleUuid& pServiceUuid, OnServiceDiscover pOnOnServiceDiscover) = 0;
+
 };
 
 } // namespace Bluetoosth

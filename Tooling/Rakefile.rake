@@ -11,6 +11,7 @@ port = '/dev/cu.usbserial-1410'
 # port = '/dev/cu.usbserial-14101'
 # port = 'ls -0001'
 baudrate = 921600
+#baudrate = 2764800
 
 
 build_target_folders = ['BtApps/BtAppAlarmClock', 'BtApps/BtSketchEPaper', 'BtCmps/test', 'BtCmps']

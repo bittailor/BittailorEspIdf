@@ -88,6 +88,25 @@ bool BleClient::connect(const BleAddress& pAddress) {
     return true;
 }
 
+bool BleClient::updateConnection(const ConnectionUpdateParameters& pParameters) {
+    ble_gap_upd_params params;
+    params.itvl_min = ((pParameters.mConnectionIntervalMinimum * 8)/10).count(); 
+    params.itvl_max = ((pParameters.mConnectionIntervalMaximum * 8)/10).count();
+    params.latency = pParameters.mConnectionLatency;
+    params.supervision_timeout = (pParameters.mSupervisionTimeout/10).count();
+    params.min_ce_len = 0x0000;
+    params.max_ce_len = 0x0000;
+    ESP_LOGI(TAG, "[%s] ble_gap_update_params min=%d max=%d latency=%d supervision_timeout=%d", mAddressString.c_str(),
+             params.itvl_min,  params.itvl_max, params.latency, params.supervision_timeout);
+    int rc = ble_gap_update_params(mConnectionHandle,&params);
+    if(rc != ESP_OK) {
+        ESP_LOGW(TAG, "[%s]ble_gap_update_params failed with %d", mAddressString.c_str(), rc);
+        return false;
+    }
+    return true;
+}
+      
+
 bool BleClient::getService(const BleUuid& pServiceUuid, OnServiceDiscover pOnOnServiceDiscover) {
     ble_uuid_any_t uuid;
     uuid.u128.u.type = BLE_UUID_TYPE_128;
@@ -177,7 +196,11 @@ int BleClient::onGapEvent(ble_gap_event* pEvent) {
         }break;
 
          case BLE_GAP_EVENT_CONN_UPDATE: {
-            ESP_LOGI(TAG, "[%s] Connection parameters updated.", mAddressString.c_str());
+            if (pEvent->conn_update.status == 0) {
+                ESP_LOGI(TAG, "[%s] connection was successfully updated.", mAddressString.c_str());
+            } else {
+                ESP_LOGW(TAG, "[%s] connection update failed with 0x%x", mAddressString.c_str(), pEvent->conn_update.status);    
+            }            
             return ESP_OK;
         }break;
 

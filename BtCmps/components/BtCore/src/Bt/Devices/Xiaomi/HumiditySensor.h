@@ -45,6 +45,9 @@ class HumiditySensor : public I_Device, private Bt::Bluetooth::I_BleClient::I_Li
       void onCharacteristicDiscover(BleCharacteristic pCharacteristic);
       void onData(uint8_t* pData, size_t pLength);
 
+      void updateConnectionViaClient();
+      void updateConnectionViaServer();
+
       Concurrency::I_SchedulingExecutionContext& mExecutionContext;
       BleClient mBleClient;
       Bt::Bluetooth::BleAddress mAddress;

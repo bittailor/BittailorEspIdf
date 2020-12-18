@@ -33,7 +33,7 @@ class BleClient : public I_BleClient
       ~BleClient();
 
       virtual bool connect(const BleAddress& pAddress);
-
+      virtual bool updateConnection(const ConnectionUpdateParameters& pParameters);
       virtual bool getService(const BleUuid& pServiceUuid, OnServiceDiscover pOnOnServiceDiscover);
 
       I_Listener& listener() const {return mListener;}

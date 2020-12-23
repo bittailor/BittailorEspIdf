@@ -68,6 +68,17 @@ void MqttController::onConnected() {
    Bt::Events::publish(I_MqttController::Connected{});
 }
 
+ void MqttController::onDisconnected() {
+   mUnsubscribed.insert(std::end(mUnsubscribed),std::begin(mSubscribed),std::end(mSubscribed));
+   mSubscribed.clear();
+   for (auto &&i : mSubscribing)
+   {
+      mUnsubscribed.push_back(i.second);   
+   }
+   mSubscribing.clear();
+   mUnsubscribing.clear(); 
+ }
+
 void MqttController::onSubscribed(int msgId) {
    auto iter = mSubscribing.find(msgId);
    if (iter == std::end(mSubscribing)) {
@@ -80,27 +91,32 @@ void MqttController::onSubscribed(int msgId) {
 }
 
 void MqttController::onData(esp_mqtt_event_handle_t pEvent) {
-   std::string topic{pEvent->topic, static_cast<size_t>(pEvent->topic_len)};
+   if(pEvent->topic_len > 0) {
+      mLastOnDataTopic = std::string{pEvent->topic, static_cast<size_t>(pEvent->topic_len)};
+   }
 
    std::list<MqttSubscription*> macthingSubscriptions;
    std::copy_if(std::begin(mSubscribed),
                 std::end(mSubscribed),
                 std::back_inserter(macthingSubscriptions),
-                [&topic](const MqttSubscription* subscription) {
-                     return Mqtt::topicMatchesSubscription(subscription->topic().c_str(), topic.c_str());
+                [this](const MqttSubscription* subscription) {
+                     return Mqtt::topicMatchesSubscription(subscription->topic(), mLastOnDataTopic);
                 }
    );
 
    if(macthingSubscriptions.size() < 1) {
-      ESP_LOGW(TAG, "no matching subscription found for TOPIC=%s", topic.c_str());
+      ESP_LOGW(TAG, "no matching subscription found for TOPIC=%s", mLastOnDataTopic.c_str());
       return;
    }
 
-   std::shared_ptr<MqttMessage> message = std::make_shared<MqttMessage>(pEvent->topic, static_cast<size_t>(pEvent->topic_len), pEvent->data, static_cast<size_t>(pEvent->data_len));
+   std::shared_ptr<MqttMessage> message = std::make_shared<MqttMessage>(
+      mLastOnDataTopic.c_str(), mLastOnDataTopic.length(), 
+      pEvent->data, static_cast<size_t>(pEvent->data_len),
+      pEvent->current_data_offset,
+      pEvent->total_data_len);
    for(MqttSubscription* subscription :macthingSubscriptions) {
       subscription->onMessage(message);
    }
-
 }
 
 void MqttController::subscribe(MqttSubscription* pSubscription) {
@@ -128,6 +144,7 @@ void MqttController::onMqttEvent(esp_mqtt_event_handle_t pEvent) {
             break;
         case MQTT_EVENT_DISCONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
+            onDisconnected();
             break;
         case MQTT_EVENT_SUBSCRIBED:
             onSubscribed(pEvent->msg_id);
@@ -140,10 +157,20 @@ void MqttController::onMqttEvent(esp_mqtt_event_handle_t pEvent) {
             ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", pEvent->msg_id);
             break;
         case MQTT_EVENT_DATA:
+            /*
+            - msg_id               message id
+            - topic                pointer to the received topic
+            - topic_len            length of the topic
+            - data                 pointer to the received data
+            - data_len             length of the data for this event
+            - current_data_offset  offset of the current data for this event
+            - total_data_len       total length of the data received
+            */
             ESP_LOGI(TAG, "MQTT_EVENT_DATA");
-            ESP_LOGI(TAG, " - Id=%d", pEvent->msg_id);
+            ESP_LOGI(TAG, " - Id=%d topic_len=%d , data_len=%d, current_data_offset=%d, total_data_len=%d", 
+                     pEvent->msg_id, pEvent->topic_len, pEvent->data_len, pEvent->current_data_offset, pEvent->total_data_len);
             ESP_LOGI(TAG, " - TOPIC=%.*s", pEvent->topic_len, pEvent->topic);
-            ESP_LOGI(TAG, " - DATA=%.*s", pEvent->data_len, pEvent->data);
+            //ESP_LOGI(TAG, " - DATA=%.*s", pEvent->data_len, pEvent->data);
             onData(pEvent);
             break;
         case MQTT_EVENT_ERROR:

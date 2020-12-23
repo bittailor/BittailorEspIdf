@@ -34,7 +34,6 @@ class Vitals
       Concurrency::I_SchedulingExecutionContext& mExecutionContext;
       Protocols::I_MqttController& mMqtt;
       Events::Subscription<Protocols::I_MqttController::Connected> mOnMqttConnected;
-      std::string mChipId;
       std::string mTopic;
        
 };

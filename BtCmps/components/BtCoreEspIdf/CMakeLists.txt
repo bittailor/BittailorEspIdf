@@ -14,6 +14,8 @@ set(srcs
 	"src/Bt/Protocols/SntpController.cpp"
 	"src/Bt/Storage/NvsRepository.cpp"
 	"src/Bt/Storage/VirtualFilesystem.cpp"
+	"src/Bt/System/OtaUpdate.cpp"
+	"src/Bt/System/System.cpp"
 	"src/Bt/System/Vitals.cpp"
 )
 
@@ -32,5 +34,5 @@ endif()
 idf_component_register(
 	SRCS	"${srcs}" 
 	INCLUDE_DIRS "src"
-	REQUIRES driver nvs_flash mqtt spiffs bt BtCore ArduinoJson
+	REQUIRES driver nvs_flash mqtt spiffs bt app_update BtCore ArduinoJson
 )

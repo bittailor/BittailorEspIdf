@@ -14,6 +14,8 @@
 
 #include <Bt/Core/StringUtilities.h>
 
+#include "Bt/System/I_System.h"
+
 namespace Bt {
 namespace System {
 
@@ -21,10 +23,7 @@ Vitals::Vitals(Concurrency::I_SchedulingExecutionContext& pExecutionContext, Pro
 : mExecutionContext(pExecutionContext)
 , mMqtt(pMqtt)
 , mOnMqttConnected(mExecutionContext,[this](auto pEvent){onMqttConnected();}) {
-    uint8_t mac[6]; 
-    esp_read_mac(mac, ESP_MAC_WIFI_STA);
-    mChipId = Core::stringPrintf("%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-    mTopic = Core::stringPrintf("bittailor/home/gateway/%s/vitals",mChipId.c_str());
+    mTopic = Core::stringPrintf("bittailor/home/gateway/%s/vitals", System::getId().c_str());
 }
 
 Vitals::~Vitals() {

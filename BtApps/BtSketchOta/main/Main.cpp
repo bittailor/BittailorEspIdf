@@ -7,19 +7,13 @@
 #include <esp_log.h>
 #include <esp_system.h>
 
-#include <ArduinoJson.h>
-
-#include <Bt/Bluetooth/BleController.h>
-#include <Bt/Bluetooth/BleDeviceDiscoveryAgent.h>
 #include <Bt/Concurrency/CountdownLatch.h>
+#include <Bt/Concurrency/WorkerExecutionContext.h>
 #include <Bt/Concurrency/SchedulingExecutionContext.h>
 #include <Bt/Core/StringBuilder.h>
 #include <Bt/Core/Singleton.h>
 #include <Bt/Core/Time.h>
 #include <Bt/Core/Timezone.h>
-#include <Bt/Devices/Xiaomi/DeviceFactory.h>
-#include <Bt/Devices/Xiaomi/HumiditySensor.h>
-#include <Bt/Devices/Xiaomi/BleDiscoveryAgent.h>
 #include <Bt/Events/Events.h>
 #include <Bt/Events/DefaultEventLoop.h>
 #include <Bt/Network/WiFiController.h>
@@ -29,13 +23,17 @@
 #include <Bt/Storage/VirtualFilesystem.h>
 #include <Bt/System/System.h>
 #include <Bt/System/OtaUpdate.h>
-#include <Bt/Xiaomi/Gateway.h>
 #include <Bt/System/Vitals.h>
-
-
 
 constexpr const char* TAG = "Main";
 Bt::Concurrency::CountdownLatch sMainExitLatch(1);
+
+void runWorkerExecutionContext(void* pWorkerExecutionContext) {
+   if (pWorkerExecutionContext != nullptr) {
+      static_cast<Bt::Concurrency::WorkerExecutionContext*>(pWorkerExecutionContext)->run();
+   }
+   vTaskDelete(nullptr);
+}
 
 void executionContext(void* pContext)
 {
@@ -50,7 +48,6 @@ void executionContext(void* pContext)
    Bt::Core::Time time;
    Bt::Core::Timezone timezone;
 
-
    Bt::Storage::NvsRepository nvsRepository;
    Bt::Storage::VirtualFilesystem virtualFilesystem;
 
@@ -61,30 +58,21 @@ void executionContext(void* pContext)
 
    Bt::Concurrency::SchedulingExecutionContext mainExecutionContext(time);
 
-   Bt::Network::WiFiController wiFiController(mainExecutionContext, defaultEventLoop, CONFIG_BT_MIIJA_GATEWAY_WIFI_SSID, CONFIG_BT_MIIJA_GATEWAY_WIFI_PASSWORD);
+   Bt::Network::WiFiController wiFiController(mainExecutionContext, defaultEventLoop, CONFIG_BT_SKETCH_OTA_WIFI_SSID, CONFIG_BT_SKETCH_OTA_WIFI_PASSWORD);
    Bt::Protocols::SntpController sntpController(defaultEventLoop);
 
 
    Bt::Protocols::MqttController mqttController(defaultEventLoop,
-                                                CONFIG_BT_MIIJA_GATEWAY_MQTT_URI,
+                                                "mqtt://piOne.local",
                                                 [](esp_mqtt_client_config_t& cfg){
-                                                      //cfg.client_id = CONFIG_BT_MIIJA_GATEWAY_MQTT_CLIENT_ID;
-                                                      cfg.username = CONFIG_BT_MIIJA_GATEWAY_MQTT_USERNAME;
-                                                      cfg.password = CONFIG_BT_MIIJA_GATEWAY_MQTT_PASSWORD;
+                                                      cfg.port = 11883;
                                                 });
 
+   Bt::Concurrency::WorkerExecutionContext otaWorkerContext;
+   xTaskCreate(runWorkerExecutionContext, "otaWorkerContext", 8192, &otaWorkerContext, 6, nullptr);
+   Bt::System::OtaUpdate otaUpdate(otaWorkerContext, mqttController);
    
-   // Bt::System::OtaUpdate otaUpdate(mainExecutionContext, mqttController);
-
    Bt::System::Vitals vitals(mainExecutionContext,mqttController);
-   Bt::Bluetooth::BleController bleController(mainExecutionContext);
-   
-   Bt::Devices::Xiaomi::DeviceFactory mXiaomiDeviceFactory;
-   Bt::Devices::Xiaomi::HumiditySensor::registerAtFactory(mainExecutionContext, mXiaomiDeviceFactory, bleController) ;
-   Bt::Devices::Xiaomi::BleDiscoveryAgent xiaomiBleDiscoveryAgent(bleController);
-
-   Bt::Xiaomi::Gateway xiaomiGateway(mainExecutionContext, bleController, mqttController);   
-
 
    ESP_LOGI(TAG, "Run:");
    ESP_LOGI(TAG, " - Free memory : %d bytes", esp_get_free_heap_size());

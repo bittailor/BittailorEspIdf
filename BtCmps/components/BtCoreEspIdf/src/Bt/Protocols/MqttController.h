@@ -50,12 +50,12 @@ class MqttController : public I_MqttController
       void onMqttEvent(esp_mqtt_event_handle_t pEvent);
 
       void onConnected();
+      void onDisconnected();
       void onSubscribed(int msgId);
       void onData(esp_mqtt_event_handle_t pEvent);
 
 
       void subscribe(MqttSubscription* pSubscription);
-
 
       std::string mBrokerUri;
       Events::EventLoopSubscription mIpEvents;
@@ -65,6 +65,8 @@ class MqttController : public I_MqttController
       std::map<int,MqttSubscription*> mSubscribing;
       std::list<MqttSubscription*> mSubscribed;
       std::map<int,MqttSubscription*> mUnsubscribing;
+
+      std::string mLastOnDataTopic;
 
 
 };

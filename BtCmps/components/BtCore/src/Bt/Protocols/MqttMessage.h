@@ -14,10 +14,14 @@ namespace Protocols {
 
 class MqttMessage {
    public:
-      MqttMessage(const char* pTopic, size_t pTopicLength, const char* pData, size_t pDataLength)
-      : topic{pTopic, pTopicLength}, data{pData, pDataLength} {}
+      MqttMessage(const char* pTopic, size_t pTopicLength, const char* pData, size_t pDataLength, size_t pCurrentDataOffset, size_t pTotalDataLength)
+      : topic{pTopic, pTopicLength}, data{pData, pDataLength}, currentDataOffset{pCurrentDataOffset}, totalDataLength(pTotalDataLength){}
+      
       const std::string topic;
       const std::string data;
+      const size_t currentDataOffset;
+      const size_t totalDataLength;
+ 
 };
 
 } // namespace Protocols

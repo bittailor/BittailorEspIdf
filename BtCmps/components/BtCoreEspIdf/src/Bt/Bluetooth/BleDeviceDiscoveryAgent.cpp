@@ -35,6 +35,7 @@ BleDeviceDiscoveryAgent::~BleDeviceDiscoveryAgent() {
 void BleDeviceDiscoveryAgent::start(std::chrono::milliseconds pDuration) {
     int32_t duration = pDuration.count();
     if(pDuration == pDuration.max()) {
+        ESP_LOGI(TAG, "pDuration == pDuration.max() => BLE_HS_FOREVER"); 
         duration = BLE_HS_FOREVER;
     }
     ESP_LOGI(TAG, "ble_gap_disc for %d", duration);
@@ -66,7 +67,7 @@ int BleDeviceDiscoveryAgent::onGapEvent(ble_gap_event* pEvent) {
 
 void BleDeviceDiscoveryAgent::onDiscover(ble_gap_event* pEvent) {
     auto address = BleAddress::from48BitLe(pEvent->disc.addr.val, pEvent->disc.addr.type);
-    
+    ESP_LOGD(TAG, "onDiscover address %s", address.toString().c_str());
     auto iter = mDiscoveredDevices.find(address);
     std::shared_ptr<BleDeviceInfo> deviceInfo;
     if(iter != std::end(mDiscoveredDevices)) {
@@ -75,6 +76,7 @@ void BleDeviceDiscoveryAgent::onDiscover(ble_gap_event* pEvent) {
         deviceInfo = std::make_shared<BleDeviceInfo>();
         deviceInfo->address(address);    
     }
+    deviceInfo->rssi(pEvent->disc.rssi); 
     
     ble_hs_adv_fields fields;
     int rc = ble_hs_adv_parse_fields(&fields, pEvent->disc.data, pEvent->disc.length_data);

@@ -19,10 +19,20 @@
 namespace Bt {
 namespace Protocols {
 
+class MqttMessageSubscription;
+class MqttRawSubscription;
+
+class I_MqttSubscriptionVisitor {
+   public:
+      virtual ~I_MqttSubscriptionVisitor(){};
+
+      virtual void visit(MqttMessageSubscription& pSubscription) = 0; 
+      virtual void visit(MqttRawSubscription& pSubscription) = 0; 
+};
+
 class MqttSubscription
 {
    public:
-      MqttSubscription(Concurrency::I_ExecutionContext& pExecutionContext, I_MqttController& pMqttController, std::function<void(std::shared_ptr<MqttMessage>)> pCallback ,const std::string& pTopic, int pQos);
       MqttSubscription(const MqttSubscription&) = delete;
       MqttSubscription& operator=(const MqttSubscription&) = delete;
       ~MqttSubscription();
@@ -30,16 +40,46 @@ class MqttSubscription
       const std::string& topic() const {return mTopic;}
       int qos() const {return mQos;}
 
-      void onMessage(std::shared_ptr<MqttMessage> pMessage);
+      virtual void accept(I_MqttSubscriptionVisitor& pVisitor) = 0;  
 
+   protected:
+      MqttSubscription(I_MqttController& pMqttController, const std::string& pTopic, int pQos);
+      
    private:
-      Concurrency::I_ExecutionContext& mExecutionContext;
       I_MqttController& mMqttController;
-      std::function<void(std::shared_ptr<MqttMessage>)> mCallback;
       std::string mTopic;
       int mQos;
       
 };
+
+class MqttMessageSubscription : public MqttSubscription
+{
+   public:
+      MqttMessageSubscription(Concurrency::I_ExecutionContext& pExecutionContext, I_MqttController& pMqttController ,const std::string& pTopic, int pQos, std::function<void(std::shared_ptr<MqttMessage>)> pCallback);
+      
+      void onMessage(std::shared_ptr<MqttMessage> pMessage);
+      virtual void accept(I_MqttSubscriptionVisitor& pVisitor);  
+   
+   private:
+      Concurrency::I_ExecutionContext& mExecutionContext;
+      std::function<void(std::shared_ptr<MqttMessage>)> mCallback;
+      
+};
+
+class MqttRawSubscription : public MqttSubscription
+{
+   public:
+      MqttRawSubscription(I_MqttController& pMqttController, const std::string& pTopic, int pQos, std::function<void(const RawMqttMessage& pMessage)> pCallback);
+      
+      void onRawMessage(const RawMqttMessage& pMessage);
+      virtual void accept(I_MqttSubscriptionVisitor& pVisitor);  
+   
+   private:
+      std::function<void(const RawMqttMessage& pMessage)> mCallback;
+};
+
+
+
 
 } // namespace Protocols
 } // namespace Bt

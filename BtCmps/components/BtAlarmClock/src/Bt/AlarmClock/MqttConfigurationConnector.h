@@ -30,8 +30,8 @@ class MqttConfigurationConnector
       Concurrency::I_ExecutionContext& mExecutionContext;
       ConfigurationController& mConfigurationController;
       Bt::Protocols::I_MqttController& mMqttController;
-      Bt::Protocols::MqttSubscription mMqttGetSubscription;
-      Bt::Protocols::MqttSubscription mMqttSetSubscription;
+      Bt::Protocols::MqttMessageSubscription mMqttGetSubscription;
+      Bt::Protocols::MqttMessageSubscription mMqttSetSubscription;
       
 };
 

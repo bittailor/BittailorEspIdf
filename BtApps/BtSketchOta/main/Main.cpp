@@ -28,13 +28,6 @@
 constexpr const char* TAG = "Main";
 Bt::Concurrency::CountdownLatch sMainExitLatch(1);
 
-void runWorkerExecutionContext(void* pWorkerExecutionContext) {
-   if (pWorkerExecutionContext != nullptr) {
-      static_cast<Bt::Concurrency::WorkerExecutionContext*>(pWorkerExecutionContext)->run();
-   }
-   vTaskDelete(nullptr);
-}
-
 void executionContext(void* pContext)
 {
    ESP_LOGI(TAG, "Startup:");
@@ -65,12 +58,12 @@ void executionContext(void* pContext)
    Bt::Protocols::MqttController mqttController(defaultEventLoop,
                                                 "mqtt://piOne.local",
                                                 [](esp_mqtt_client_config_t& cfg){
-                                                      cfg.port = 11883;
+                                                      cfg.username = "***REMOVED***";
+                                                      cfg.password = "***REMOVED***";
+
                                                 });
 
-   Bt::Concurrency::WorkerExecutionContext otaWorkerContext;
-   xTaskCreate(runWorkerExecutionContext, "otaWorkerContext", 8192, &otaWorkerContext, 6, nullptr);
-   Bt::System::OtaUpdate otaUpdate(otaWorkerContext, mqttController);
+   Bt::System::OtaUpdate otaUpdate(mainExecutionContext, mqttController);
    
    Bt::System::Vitals vitals(mainExecutionContext,mqttController);
 

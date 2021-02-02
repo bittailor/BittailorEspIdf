@@ -1,6 +1,9 @@
 {
 	"folders": [
 		{
+			"path": "BtApps/BtBleAdvertisementsGateway"
+		},
+		{
 			"path": "BtApps/BtMijiaBleSensorGateway"
 		},
 		{
@@ -8,6 +11,9 @@
 		},
 		{
 			"path": "BtApps/BtSketchOta"
+		},
+		{
+			"path": "BtApps/BtSketchAtcMi"
 		},
 		{
 			"path": "BtCmps"

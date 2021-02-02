@@ -6,13 +6,16 @@ rescue LoadError
 end
 
 
-port = '/dev/cu.usbserial-1410'
+#port = '/dev/cu.usbserial-1410'
 # port = '/dev/cu.usbserial-1420'
 # port = '/dev/cu.usbserial-14101'
+port = '/dev/cu.usbserial-14110'
 # port = 'ls -0001'
+
 baudrate = 921600
 #baudrate = 2764800
 
+device = "30:AE:A4:CC:47:68"
 
 build_target_folders = ['BtApps/BtAppAlarmClock', 'BtApps/BtSketchEPaper', 'BtCmps/test', 'BtCmps']
 build_host_folders = ['BtHostTests']
@@ -127,9 +130,51 @@ task :flash do
     end
 end
 
+task :ota do
+    Dir.chdir(flash_folder) do    
+        sh "mosquitto_pub -h piOne.local -u ***REMOVED*** -P ***REMOVED*** -p 1883 -t bittailor/ota/#{device}/data -q 2 -f build/BtMijiaBleSensorGateway.bin"
+        
+        # sh 'mosquitto_pub -h piOne.local -u ***REMOVED*** -P ***REMOVED*** -t bittailor/ota/D8:A0:1D:5E:2E:00/data -q 2 -f build/BtMijiaBleSensorGateway.bin '
+        # sh 'mosquitto_pub -h broker.hivemq.com -t bittailor/ota/D8:A0:1D:5E:2E:00/data -q 2 -f build/BtMijiaBleSensorGateway.bin'
+        # sh 'mosquitto_pub -h piOne.local -u ***REMOVED*** -P ***REMOVED*** -p 1883 -t bittailor/ota/3C:71:BF:47:DA:94/data -q 2 -f build/BtMijiaBleSensorGateway.bin'
+        # sh 'mosquitto_pub -h piOne.local -p 1883 -t bittailor/ota/3C:71:BF:47:DA:94/data -q 2 -f ../BtSketchOta/build/BtSketchOta.bin'
+        # sh 'mosquitto_pub -h broker.emqx.io -t bittailor/ota/D8:A0:1D:5E:2E:00/data -q 2 -f build/BtMijiaBleSensorGateway.bin'
+        # mosquitto_sub -h piOne.local -u ***REMOVED*** -P ***REMOVED*** -t bittailor/develop/uartgateway/370020000a47343232363230/uart/raw
+    end
+end
+
+
+task :restart do
+    Dir.chdir(flash_folder) do    
+        sh "mosquitto_pub -h piOne.local -u ***REMOVED*** -P ***REMOVED*** -p 1883 -t bittailor/ota/#{device}/restart -q 2 -m \"restart\" "
+    end
+end
+
+task :btota do
+    Dir.chdir(flash_folder) do
+        fragement = 1024
+        contents = nil
+        File.open("build/BtMijiaBleSensorGateway.bin", "rb") do |file| 
+            contents = file.read
+            puts contents.size
+        end
+        puts contents.size
+        File.open("build/BtMijiaBleSensorGateway.bin.out", "wb") do |file| 
+            sent = 0
+            while sent < contents.size
+                slice_size = [1024,(contents.size-sent)].min
+                puts "sent #{sent} slice_size #{slice_size}"
+                file.write(contents[sent..(sent+slice_size)])
+                sent = sent + slice_sizecmp
+            end
+        end
+    end
+end
+
 task :test => 'test:all'
 task :build => 'build:all'
 
-task :default => [ 'test:all' ]
+# task :default => [ 'test:all' ]
+task :default => [ 'flash' ]
 
 

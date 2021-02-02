@@ -18,6 +18,27 @@
 
 namespace Bt {
 namespace Protocols {
+namespace {
+   
+   class MqttSubscriptionVisitor : public I_MqttSubscriptionVisitor  {
+      public:
+         
+         virtual void visit(MqttMessageSubscription& pSubscription) {
+            mMessageSubscriptions.push_back(&pSubscription);
+         } 
+         virtual void visit(MqttRawSubscription& pSubscription) {
+            mRawSubscriptions.push_back(&pSubscription);
+         }
+
+         bool empty() const {
+            return mMessageSubscriptions.empty() && mRawSubscriptions.empty(); 
+         }
+
+         std::list<MqttMessageSubscription*> mMessageSubscriptions;   
+         std::list<MqttRawSubscription*> mRawSubscriptions;   
+   }; 
+
+} // namespace 
 
 void MqttController::mqttEventHandler(void* pHandlerArg, esp_event_base_t pEventBase, int32_t pEventId, void* pEventData) {
    if(pHandlerArg == nullptr) {
@@ -95,28 +116,40 @@ void MqttController::onData(esp_mqtt_event_handle_t pEvent) {
       mLastOnDataTopic = std::string{pEvent->topic, static_cast<size_t>(pEvent->topic_len)};
    }
 
-   std::list<MqttSubscription*> macthingSubscriptions;
-   std::copy_if(std::begin(mSubscribed),
-                std::end(mSubscribed),
-                std::back_inserter(macthingSubscriptions),
-                [this](const MqttSubscription* subscription) {
-                     return Mqtt::topicMatchesSubscription(subscription->topic(), mLastOnDataTopic);
-                }
-   );
+   MqttSubscriptionVisitor mVisitor;
+   for (MqttSubscription* subscription  : mSubscribed)
+   {
+      if(Mqtt::topicMatchesSubscription(subscription->topic(), mLastOnDataTopic)){
+         subscription->accept(mVisitor);
+      }   
+   }
 
-   if(macthingSubscriptions.size() < 1) {
+   if(mVisitor.empty()) {
       ESP_LOGW(TAG, "no matching subscription found for TOPIC=%s", mLastOnDataTopic.c_str());
       return;
    }
 
-   std::shared_ptr<MqttMessage> message = std::make_shared<MqttMessage>(
-      mLastOnDataTopic.c_str(), mLastOnDataTopic.length(), 
-      pEvent->data, static_cast<size_t>(pEvent->data_len),
-      pEvent->current_data_offset,
-      pEvent->total_data_len);
-   for(MqttSubscription* subscription :macthingSubscriptions) {
-      subscription->onMessage(message);
+   if(!mVisitor.mRawSubscriptions.empty()) {
+      RawMqttMessage rawMessage{
+         pEvent->topic, static_cast<size_t>(pEvent->topic_len),
+         pEvent->data, static_cast<size_t>(pEvent->data_len),
+         static_cast<size_t>(pEvent->current_data_offset),
+         static_cast<size_t>(pEvent->total_data_len)};
+      for(MqttRawSubscription* subscription : mVisitor.mRawSubscriptions) {
+         subscription->onRawMessage(rawMessage);
+      } 
    }
+
+   if(!mVisitor.mMessageSubscriptions.empty()) {
+      std::shared_ptr<MqttMessage> message = std::make_shared<MqttMessage>(
+         mLastOnDataTopic.c_str(), mLastOnDataTopic.length(), 
+         pEvent->data, static_cast<size_t>(pEvent->data_len),
+         pEvent->current_data_offset,
+         pEvent->total_data_len);
+      for(MqttMessageSubscription* subscription : mVisitor.mMessageSubscriptions) {
+         subscription->onMessage(message);
+      }
+   }   
 }
 
 void MqttController::subscribe(MqttSubscription* pSubscription) {
@@ -166,10 +199,9 @@ void MqttController::onMqttEvent(esp_mqtt_event_handle_t pEvent) {
             - current_data_offset  offset of the current data for this event
             - total_data_len       total length of the data received
             */
-            ESP_LOGI(TAG, "MQTT_EVENT_DATA");
-            ESP_LOGI(TAG, " - Id=%d topic_len=%d , data_len=%d, current_data_offset=%d, total_data_len=%d", 
-                     pEvent->msg_id, pEvent->topic_len, pEvent->data_len, pEvent->current_data_offset, pEvent->total_data_len);
-            ESP_LOGI(TAG, " - TOPIC=%.*s", pEvent->topic_len, pEvent->topic);
+            ESP_LOGD(TAG, "MQTT_EVENT_DATA");
+            ESP_LOGD(TAG, " - Id=%d topic_len=%d , data_len=%d, current_data_offset=%d, total_data_len=%d", pEvent->msg_id, pEvent->topic_len, pEvent->data_len, pEvent->current_data_offset, pEvent->total_data_len);
+            ESP_LOGD(TAG, " - TOPIC=%.*s", pEvent->topic_len, pEvent->topic);
             //ESP_LOGI(TAG, " - DATA=%.*s", pEvent->data_len, pEvent->data);
             onData(pEvent);
             break;

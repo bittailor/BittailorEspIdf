@@ -20,8 +20,8 @@ MqttConfigurationConnector::MqttConfigurationConnector(Concurrency::I_ExecutionC
 : mExecutionContext(pExecutionContext)
 , mConfigurationController(pConfigurationController)
 , mMqttController(pMqttController)
-, mMqttGetSubscription(pExecutionContext, pMqttController, [this](auto pMessage){onMqttGetMessage(pMessage);}, "btAlarmClock/devOne/request/config/+/get",1)
-, mMqttSetSubscription(pExecutionContext, pMqttController, [this](auto pMessage){onMqttSetMessage(pMessage);}, "btAlarmClock/devOne/request/config/+/set",1){
+, mMqttGetSubscription(pExecutionContext, pMqttController, "btAlarmClock/devOne/request/config/+/get",1, [this](auto pMessage){onMqttGetMessage(pMessage);})
+, mMqttSetSubscription(pExecutionContext, pMqttController, "btAlarmClock/devOne/request/config/+/set",1, [this](auto pMessage){onMqttSetMessage(pMessage);}){
 
 }
 

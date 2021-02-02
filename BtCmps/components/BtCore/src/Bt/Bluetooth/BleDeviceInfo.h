@@ -29,6 +29,9 @@ class BleDeviceInfo
       void address(const BleAddress& pAddress) {mAddress = pAddress;}
       const BleAddress& address() const {return mAddress;}
 
+      void rssi(int8_t pRssi) {mRssi = pRssi;}
+      int8_t rssi() const {return mRssi;}
+
       const BleUuid& serviceUuid() const {return mServiceUuid;}
       const std::vector<uint8_t>& serviceData() const {return mServiceData;}
 
@@ -36,6 +39,7 @@ class BleDeviceInfo
 
    private:
       BleAddress mAddress;
+      int8_t mRssi;
       BleUuid mServiceUuid;
       std::vector<uint8_t> mServiceData;
       

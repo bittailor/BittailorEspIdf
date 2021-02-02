@@ -24,6 +24,15 @@ class MqttMessage {
  
 };
 
+struct RawMqttMessage {
+   const char* topic;
+   size_t topicLength;
+   const char* data;
+   size_t dataLength;
+   size_t currentDataOffset;
+   size_t totalDataLength;   
+};
+
 } // namespace Protocols
 } // namespace Bt
 

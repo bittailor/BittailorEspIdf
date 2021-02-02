@@ -9,8 +9,7 @@
 namespace Bt {
 namespace Bluetooth {
 
-BleDeviceInfo::BleDeviceInfo() {
-
+BleDeviceInfo::BleDeviceInfo() : mRssi(0) {
 }
 
 BleDeviceInfo::~BleDeviceInfo() {

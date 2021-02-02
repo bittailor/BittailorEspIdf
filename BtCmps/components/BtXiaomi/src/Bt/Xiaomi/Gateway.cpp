@@ -20,14 +20,14 @@ namespace Xiaomi {
 namespace {
     constexpr const char* TAG = "Bt::Xiaomi::Gateway";
     Bluetooth::BleAddress cAddresses[] = {
-        // Bluetooth::BleAddress::from48BitBe(Bluetooth::BleAddress::Address48Bit{{0xA4,0xC1,0x38,0x1D,0x2D,0x67}}), // corridor
-        // Bluetooth::BleAddress::from48BitBe(Bluetooth::BleAddress::Address48Bit{{0xA4,0xC1,0x38,0xEF,0x61,0x6E}}), // balcony
+        Bluetooth::BleAddress::from48BitBe(Bluetooth::BleAddress::Address48Bit{{0xA4,0xC1,0x38,0x1D,0x2D,0x67}}), // corridor
+        Bluetooth::BleAddress::from48BitBe(Bluetooth::BleAddress::Address48Bit{{0xA4,0xC1,0x38,0xEF,0x61,0x6E}}), // balcony
         // Bluetooth::BleAddress::from48BitBe(Bluetooth::BleAddress::Address48Bit{{0xA4,0xC1,0x38,0x7B,0x1D,0xDB}}), // kitchen
-        // Bluetooth::BleAddress::from48BitBe(Bluetooth::BleAddress::Address48Bit{{0xA4,0xC1,0x38,0xF7,0xA8,0x55}}), // bedroom f&b
-        // Bluetooth::BleAddress::from48BitBe(Bluetooth::BleAddress::Address48Bit{{0xA4,0xC1,0x38,0xF5,0x4C,0x21}}), // bathroom¨
-        // Bluetooth::BleAddress::from48BitBe(Bluetooth::BleAddress::Address48Bit{{0xA4,0xC1,0x38,0x86,0xE1,0xD1}}), // hanna
-        // Bluetooth::BleAddress::from48BitBe(Bluetooth::BleAddress::Address48Bit{{0xA4,0xC1,0x38,0x31,0xE1,0x15}}), // jonathan
-        Bluetooth::BleAddress::from48BitBe(Bluetooth::BleAddress::Address48Bit{{0xA4,0xC1,0x38,0x90,0xEC,0x72}}), // living room¨
+        Bluetooth::BleAddress::from48BitBe(Bluetooth::BleAddress::Address48Bit{{0xA4,0xC1,0x38,0xF7,0xA8,0x55}}), // bedroom f&b
+        Bluetooth::BleAddress::from48BitBe(Bluetooth::BleAddress::Address48Bit{{0xA4,0xC1,0x38,0xF5,0x4C,0x21}}), // bathroom¨
+        Bluetooth::BleAddress::from48BitBe(Bluetooth::BleAddress::Address48Bit{{0xA4,0xC1,0x38,0x86,0xE1,0xD1}}), // hanna
+        Bluetooth::BleAddress::from48BitBe(Bluetooth::BleAddress::Address48Bit{{0xA4,0xC1,0x38,0x31,0xE1,0x15}}), // jonathan
+        // Bluetooth::BleAddress::from48BitBe(Bluetooth::BleAddress::Address48Bit{{0xA4,0xC1,0x38,0x90,0xEC,0x72}}), // living room¨
     };
 }
 

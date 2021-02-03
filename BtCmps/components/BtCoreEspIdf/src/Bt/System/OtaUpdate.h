@@ -36,6 +36,7 @@ class OtaUpdate
       Protocols::MqttMessageSubscription mRebootSubscription;
       esp_ota_handle_t mUpdateHandle;
       const esp_partition_t* mUpdatePartition;
+      int mPercentageCounter;
       
 };
 

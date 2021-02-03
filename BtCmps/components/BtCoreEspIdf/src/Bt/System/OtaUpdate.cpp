@@ -25,7 +25,7 @@ OtaUpdate::OtaUpdate(Concurrency::I_SchedulingExecutionContext& pExecutionContex
 : mExecutionContext(pExecutionContext), mMqttController(pMqttController)
 , mUpdateSubscription(mMqttController, Core::stringPrintf("bittailor/ota/%s/data",System::getId().c_str()), 2, [this](const Protocols::RawMqttMessage& pMessage){onMessage(pMessage);})  
 , mRebootSubscription(pExecutionContext, mMqttController, Core::stringPrintf("bittailor/ota/%s/restart",System::getId().c_str()), 2, [this](std::shared_ptr<Protocols::MqttMessage> pMessage){onRestartMessage(pMessage);})  
-, mUpdateHandle(), mUpdatePartition(nullptr){
+, mUpdateHandle(), mUpdatePartition(nullptr), mPercentageCounter(0){
 }
 
 OtaUpdate::~OtaUpdate() {
@@ -37,7 +37,7 @@ void OtaUpdate::onMessage(const Protocols::RawMqttMessage& pMessage) {
         mUpdatePartition = esp_ota_get_next_update_partition(NULL);
         assert(mUpdatePartition != NULL);
         ESP_LOGI(TAG, "Writing to partition %s subtype %d at offset 0x%x", mUpdatePartition->label , mUpdatePartition->subtype, mUpdatePartition->address);
-        
+        mPercentageCounter = 0;
         int err = esp_ota_begin(mUpdatePartition, OTA_SIZE_UNKNOWN, &mUpdateHandle);
         if (err != ESP_OK)
         {
@@ -54,7 +54,12 @@ void OtaUpdate::onMessage(const Protocols::RawMqttMessage& pMessage) {
             ESP_LOGE(TAG, "esp_ota_write failed (%s)!", esp_err_to_name(err));
             return;
         }
-        ESP_LOGI(TAG, "ota %3d%%", ( (100*(pMessage.currentDataOffset+pMessage.dataLength))/pMessage.totalDataLength));
+
+        int percentageCounter = ((100*(pMessage.currentDataOffset+pMessage.dataLength))/pMessage.totalDataLength);
+        if(percentageCounter != mPercentageCounter) {
+            mPercentageCounter = percentageCounter;
+            ESP_LOGI(TAG, "ota %3d%%", mPercentageCounter);
+        }    
     }
     if (pMessage.dataLength + pMessage.currentDataOffset >= pMessage.totalDataLength)
     {

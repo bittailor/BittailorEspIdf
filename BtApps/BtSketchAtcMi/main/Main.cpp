@@ -92,20 +92,23 @@ void executionContext(void* pContext)
 			         uint8_t cnt = pDeviceInfo->serviceData()[13];
 			         uint8_t flg = pDeviceInfo->serviceData()[14];
                   
-                  std::string msg = Bt::Core::stringPrintf("[%s] [%03d] temperature = %.1f : humidity = %.1f : vbattery = %.1f : battery = %d, cnt = %d, flg = %d", 
-                     pDeviceInfo->address().toString().c_str(), (int32_t)pDeviceInfo->rssi(), 
-                     temperature, humidity, vbattery,
-                     battery, (uint32_t)cnt, (uint32_t)flg);
-                  
-                  ESP_LOGI(TAG, "%s", msg.c_str());
-
-                  // ESP_LOGI(TAG, "[%s] [%03d] temperature = %.1f : humidity = %.1f : vbattery = %.1f : battery = %d, cnt = %d, flg = %d", 
+                  // std::string msg = Bt::Core::stringPrintf("[%s] [%03d] temperature = %.2f : humidity = %.2f : battery = %.3f : batteryState = %d, cnt = %d, flg = %d", 
                   //    pDeviceInfo->address().toString().c_str(), (int32_t)pDeviceInfo->rssi(), 
                   //    temperature, humidity, vbattery,
                   //    battery, (uint32_t)cnt, (uint32_t)flg);
+                  
+                  std::string msg = Bt::Core::stringPrintf(
+                     R"JSON({"rssi": %d, "temperature": %.2f, "humidity": %.2f, "battery": %.3f, "batteryState": %d, "measureCounter": %d})JSON",
+                     (int32_t)pDeviceInfo->rssi(),
+                     temperature, humidity, vbattery,
+                     battery, (uint32_t)cnt);
+
+                  ESP_LOGI(TAG, "[%s] => %s", pDeviceInfo->address().toString().c_str(), msg.c_str());
 
                   mqttController.publish(
-                     Bt::Core::stringPrintf("bittailor/develop/tests/adv/%s/reading", pDeviceInfo->address().toString().c_str()).c_str(),
+                     // bittailor/develop/tests/adv/%s/reading
+                     // bittailor/home/sensor/xiaomi/%s/reading
+                     Bt::Core::stringPrintf("bittailor/home/sensor/xiaomi/%s/reading", pDeviceInfo->address().toString().c_str()).c_str(),
                      msg
                   );
                } else {

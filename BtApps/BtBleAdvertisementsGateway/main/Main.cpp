@@ -9,28 +9,29 @@
 
 #include <ArduinoJson.h>
 
+#include <Bt/Bluetooth/BleAdvertismentScanner.h>
 #include <Bt/Bluetooth/BleController.h>
 #include <Bt/Bluetooth/BleDeviceDiscoveryAgent.h>
 #include <Bt/Concurrency/CountdownLatch.h>
 #include <Bt/Concurrency/SchedulingExecutionContext.h>
-#include <Bt/Core/StringBuilder.h>
 #include <Bt/Core/Singleton.h>
+#include <Bt/Core/StringBuilder.h>
 #include <Bt/Core/Time.h>
 #include <Bt/Core/Timezone.h>
+#include <Bt/Devices/Xiaomi/BleDiscoveryAgent.h>
 #include <Bt/Devices/Xiaomi/DeviceFactory.h>
 #include <Bt/Devices/Xiaomi/HumiditySensor.h>
-#include <Bt/Devices/Xiaomi/BleDiscoveryAgent.h>
-#include <Bt/Events/Events.h>
 #include <Bt/Events/DefaultEventLoop.h>
+#include <Bt/Events/Events.h>
 #include <Bt/Network/WiFiController.h>
 #include <Bt/Protocols/MqttController.h>
 #include <Bt/Protocols/SntpController.h>
 #include <Bt/Storage/NvsRepository.h>
 #include <Bt/Storage/VirtualFilesystem.h>
-#include <Bt/System/System.h>
 #include <Bt/System/OtaUpdate.h>
-#include <Bt/Xiaomi/Gateway.h>
+#include <Bt/System/System.h>
 #include <Bt/System/Vitals.h>
+#include <Bt/Xiaomi/AdvertisementsGateway.h>
 
 
 
@@ -75,15 +76,11 @@ void executionContext(void* pContext)
 
    
    Bt::System::OtaUpdate otaUpdate(mainExecutionContext, mqttController);
-   Bt::System::Vitals vitals(mainExecutionContext,mqttController);
+   Bt::System::Vitals vitals(mainExecutionContext, mqttController);
    Bt::Bluetooth::BleController bleController(mainExecutionContext);
+   Bt::Bluetooth::BleAdvertismentScanner bleAdvertismentScanner(mainExecutionContext, bleController);
+   Bt::Xiaomi::AdvertisementsGateway advertisementsGateway(mainExecutionContext, bleAdvertismentScanner, mqttController);
    
-   Bt::Devices::Xiaomi::DeviceFactory mXiaomiDeviceFactory;
-   Bt::Devices::Xiaomi::HumiditySensor::registerAtFactory(mainExecutionContext, mXiaomiDeviceFactory, bleController) ;
-   Bt::Devices::Xiaomi::BleDiscoveryAgent xiaomiBleDiscoveryAgent(bleController);
-
-   Bt::Xiaomi::Gateway xiaomiGateway(mainExecutionContext, bleController, mqttController);   
-
 
    ESP_LOGI(TAG, "Run:");
    ESP_LOGI(TAG, " - Free memory : %d bytes", esp_get_free_heap_size());
@@ -95,10 +92,10 @@ void executionContext(void* pContext)
 extern "C" void app_main(void) {
    esp_log_level_set("*", ESP_LOG_INFO);
    ESP_LOGI(TAG, "");
-   ESP_LOGI(TAG, "*******************************");
-   ESP_LOGI(TAG, "**  Bittailor                **");
-   ESP_LOGI(TAG, "**  Mijia BLE Sensor Gateway **");
-   ESP_LOGI(TAG, "*******************************");
+   ESP_LOGI(TAG, "*************************************");
+   ESP_LOGI(TAG, "**  Bittailor                      **");
+   ESP_LOGI(TAG, "**  Mijia BLE Advertisment Gateway **");
+   ESP_LOGI(TAG, "*************************************");
    ESP_LOGI(TAG, "");
    ESP_LOGI(TAG, "Main:");
    ESP_LOGI(TAG, " - IDF version   : %s", esp_get_idf_version());

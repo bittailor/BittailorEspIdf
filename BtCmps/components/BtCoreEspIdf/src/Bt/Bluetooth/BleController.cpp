@@ -109,6 +109,7 @@ void BleController::onHostReset(int pReason) {
             }
         }
         mClients.clear();
+        Events::publish(I_BleController::Reset{});
     });        
 }
 

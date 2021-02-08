@@ -12,7 +12,6 @@
 
 #include <Bt/Bluetooth/I_BleController.h>
 #include <Bt/Concurrency/I_ExecutionContext.h>
-
 #include "Bt/Bluetooth/BleClient.h"
 
 namespace Bt {
@@ -26,7 +25,7 @@ class BleController : public I_BleController
       BleController& operator=(const BleController&) = delete;
       ~BleController();
 
-      virtual std::shared_ptr<I_BleDeviceDiscoveryAgent>  createDeviceDiscoveryAgent(I_BleDeviceDiscoveryAgent::OnDiscover pOnDiscover = nullptr,I_BleDeviceDiscoveryAgent::OnDiscoverComplete pOnDiscoverComplete = nullptr);
+      virtual std::shared_ptr<I_BleDeviceDiscoveryAgent>  createDeviceDiscoveryAgent(I_BleDeviceDiscoveryAgent::OnDiscover pOnDiscover = nullptr, I_BleDeviceDiscoveryAgent::OnDiscoverComplete pOnDiscoverComplete = nullptr);
       virtual std::shared_ptr<I_BleClient>  createClient(I_BleClient::I_Listener& pListener);
 
       void enqueConnect(std::function<void()> pConnect);

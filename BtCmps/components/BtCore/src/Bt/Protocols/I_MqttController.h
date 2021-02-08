@@ -18,6 +18,7 @@ class MqttSubscription;
 class I_MqttController {
    public:
       struct Connected{};
+      struct Disconnected{};
 
       virtual ~I_MqttController() {}
 

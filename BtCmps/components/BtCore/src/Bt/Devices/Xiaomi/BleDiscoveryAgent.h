@@ -20,7 +20,7 @@ class BleDiscoveryAgent
       using BleController = Bt::Bluetooth::I_BleController;
       using BleDeviceDiscoveryAgent = Bt::Bluetooth::I_BleDeviceDiscoveryAgent;
       using BleDeviceInfo = std::shared_ptr<Bt::Bluetooth::BleDeviceInfo>;
-      typedef std::function<void(const std::vector<BleDeviceInfo>&)> OnDiscovered;
+      typedef std::function<void()> OnDiscovered;
 
       BleDiscoveryAgent(BleController& pBleController);
       BleDiscoveryAgent(const BleDiscoveryAgent&) = delete;

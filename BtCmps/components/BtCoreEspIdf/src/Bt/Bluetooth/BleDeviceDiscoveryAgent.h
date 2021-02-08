@@ -50,7 +50,6 @@ class BleDeviceDiscoveryAgent : public I_BleDeviceDiscoveryAgent
 
       OnDiscover mOnDiscover;
       OnDiscoverComplete mOnDiscoverComplete;
-      std::map<BleAddress,std::shared_ptr<BleDeviceInfo>> mDiscoveredDevices;
       ble_gap_disc_params mParameters; 
       uint8_t mOwnAddrType;
       

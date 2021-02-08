@@ -90,7 +90,7 @@ void executionContext(void* pContext)
                   float vbattery = ((pDeviceInfo->serviceData()[11]<<8)|(pDeviceInfo->serviceData()[10])) * 0.001;
 			         uint8_t battery = pDeviceInfo->serviceData()[12];
 			         uint8_t cnt = pDeviceInfo->serviceData()[13];
-			         uint8_t flg = pDeviceInfo->serviceData()[14];
+			         // uint8_t flg = pDeviceInfo->serviceData()[14];
                   
                   // std::string msg = Bt::Core::stringPrintf("[%s] [%03d] temperature = %.2f : humidity = %.2f : battery = %.3f : batteryState = %d, cnt = %d, flg = %d", 
                   //    pDeviceInfo->address().toString().c_str(), (int32_t)pDeviceInfo->rssi(), 
@@ -116,11 +116,11 @@ void executionContext(void* pContext)
                }   
             }
          },
-         [&mainExecutionContext,&discoveryAgent](const std::vector<std::shared_ptr<Bt::Bluetooth::BleDeviceInfo>>&){
+         [&mainExecutionContext,&discoveryAgent](bool pSuccess){
             ESP_LOGI(TAG, "End Of Scan");
             mainExecutionContext.callOnce(10ms,[&discoveryAgent](){
                ESP_LOGI(TAG, "resstart discovery");
-               discoveryAgent->start(1s);
+               discoveryAgent->start(std::chrono::milliseconds::max());
             });   
          }
       );

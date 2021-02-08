@@ -36,15 +36,8 @@ bool BleDiscoveryAgent::discoverBleDevices(std::chrono::milliseconds pDuration, 
     mDiscoveryAgent = mBleController.createDeviceDiscoveryAgent(
         [](auto pDevice){   
         },
-        [this, pOnDiscovered](auto&& pDevices){
-            std::vector<BleDeviceInfo> xiaomiDevices;   
-            for (auto device : pDevices)
-            {
-                if(device->serviceUuid() == XiaomiUuid) {
-                    xiaomiDevices.push_back(device);
-                }
-            }
-            pOnDiscovered(xiaomiDevices);
+        [this, pOnDiscovered](bool success){
+            pOnDiscovered();
             mDiscoveryAgent = nullptr;
         }
     );

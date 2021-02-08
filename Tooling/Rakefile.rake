@@ -26,7 +26,7 @@ test_target_folders = ['BtCmps/test']
 
 #flash_folder = 'BtApps/BtAppAlarmClock'
 # flash_folder = 'BtApps/BtMijiaBleSensorGateway'
-flash_folder = 'BtApps/BtSketchAtcMi'
+flash_folder = 'BtApps/BtBleAdvertisementsGateway'
  
 def idf_sh(cmd)
     return sh(". $HOME/esp/esp-idf/export.sh && " + cmd)
@@ -133,7 +133,7 @@ end
 
 task :ota do
     Dir.chdir(flash_folder) do    
-        sh "mosquitto_pub -h piOne.local -u ***REMOVED*** -P ***REMOVED*** -p 1883 -t bittailor/ota/#{device}/data -q 2 -f build/BtSketchAtcMi.bin"
+        sh "mosquitto_pub -h piOne.local -u ***REMOVED*** -P ***REMOVED*** -p 1883 -t bittailor/ota/#{device}/data -q 2 -f build/BtBleAdvertisementsGateway.bin"
         
         # sh 'mosquitto_pub -h piOne.local -u ***REMOVED*** -P ***REMOVED*** -t bittailor/ota/D8:A0:1D:5E:2E:00/data -q 2 -f build/BtMijiaBleSensorGateway.bin '
         # sh 'mosquitto_pub -h broker.hivemq.com -t bittailor/ota/D8:A0:1D:5E:2E:00/data -q 2 -f build/BtMijiaBleSensorGateway.bin'

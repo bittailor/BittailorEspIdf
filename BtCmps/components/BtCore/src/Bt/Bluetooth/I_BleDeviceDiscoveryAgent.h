@@ -19,7 +19,7 @@ namespace Bluetooth {
 class I_BleDeviceDiscoveryAgent {
    public:
       typedef std::function<void(std::shared_ptr<BleDeviceInfo>)> OnDiscover;
-      typedef std::function<void(const std::vector<std::shared_ptr<BleDeviceInfo>>&)> OnDiscoverComplete;
+      typedef std::function<void(bool)> OnDiscoverComplete;
 
       virtual ~I_BleDeviceDiscoveryAgent() {}
 

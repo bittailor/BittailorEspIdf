@@ -14,12 +14,13 @@
 
 namespace Bt {
 namespace Bluetooth {
-
 class I_BleController {
    public:
       struct Synced{};
+      struct Reset{};
+
       virtual ~I_BleController() {}
-      virtual std::shared_ptr<I_BleDeviceDiscoveryAgent>  createDeviceDiscoveryAgent(I_BleDeviceDiscoveryAgent::OnDiscover pOnDiscover = nullptr,I_BleDeviceDiscoveryAgent::OnDiscoverComplete pOnDiscoverComplete = nullptr) = 0;
+      virtual std::shared_ptr<I_BleDeviceDiscoveryAgent> createDeviceDiscoveryAgent(I_BleDeviceDiscoveryAgent::OnDiscover pOnDiscover = nullptr, I_BleDeviceDiscoveryAgent::OnDiscoverComplete pOnDiscoverComplete = nullptr) = 0;
       virtual std::shared_ptr<I_BleClient>  createClient(I_BleClient::I_Listener& pI_Listener) = 0;
 };
 

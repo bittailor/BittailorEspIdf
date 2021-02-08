@@ -97,7 +97,8 @@ void MqttController::onConnected() {
       mUnsubscribed.push_back(i.second);   
    }
    mSubscribing.clear();
-   mUnsubscribing.clear(); 
+   mUnsubscribing.clear();
+   Bt::Events::publish(I_MqttController::Disconnected{}); 
  }
 
 void MqttController::onSubscribed(int msgId) {

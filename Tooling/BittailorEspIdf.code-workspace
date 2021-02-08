@@ -26,7 +26,7 @@
 		}
 	],
 	"settings": {
-		"idf.port": "/dev/cu.usbserial-14101",
+		"idf.port": "/dev/cu.usbserial-1410",
 		"files.associations": {
 			"atomic": "cpp",
 			"array": "cpp",

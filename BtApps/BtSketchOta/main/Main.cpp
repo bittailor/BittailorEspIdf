@@ -37,6 +37,7 @@ void executionContext(void* pContext)
 
    Bt::System::System system;
    Bt::Core::Singleton<Bt::System::I_System>::Instance systemSingleton(system); 
+   ESP_LOGI(TAG, " - ID          : %s", system.id().c_str());
    
    Bt::Core::Time time;
    Bt::Core::Timezone timezone;
@@ -81,7 +82,7 @@ void executionContext(void* pContext)
 extern "C" void app_main(void) {
    esp_log_level_set("*", ESP_LOG_INFO);
 
-   ESP_LOGI(TAG, "Main:");
+   ESP_LOGI(TAG, "BtSketchOta Main:");
    ESP_LOGI(TAG, " - IDF version   : %s", esp_get_idf_version());
    ESP_LOGI(TAG, " - Free memory   : %d bytes", esp_get_free_heap_size());
 

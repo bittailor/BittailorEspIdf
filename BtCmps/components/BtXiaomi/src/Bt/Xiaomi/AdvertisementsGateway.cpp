@@ -40,7 +40,7 @@ void AdvertisementsGateway::onAdvertisment(std::shared_ptr<Bt::Bluetooth::BleDev
     {
         if (pDeviceInfo->serviceData().size() == 15)
         {
-            float temperature = ((pDeviceInfo->serviceData()[7] << 8) | (pDeviceInfo->serviceData()[6])) * 0.01;
+            float temperature = static_cast<int16_t>((pDeviceInfo->serviceData()[7] << 8) | (pDeviceInfo->serviceData()[6])) * 0.01;
             float humidity = ((pDeviceInfo->serviceData()[9] << 8) | (pDeviceInfo->serviceData()[8])) * 0.01;
             float vbattery = ((pDeviceInfo->serviceData()[11] << 8) | (pDeviceInfo->serviceData()[10])) * 0.001;
             uint8_t battery = pDeviceInfo->serviceData()[12];

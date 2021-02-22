@@ -21,11 +21,15 @@
 
 namespace Bt {
 namespace System {
+namespace {
+    constexpr const char* TAG = "Bt::System::Vitals"; 
+}
 
 Vitals::Vitals(Concurrency::I_SchedulingExecutionContext& pExecutionContext, Protocols::I_MqttController& pMqtt)
 : mExecutionContext(pExecutionContext)
 , mMqtt(pMqtt)
-, mOnMqttConnected(mExecutionContext,[this](auto pEvent){onMqttConnected();}) {
+, mOnMqttConnected(mExecutionContext,[this](auto pEvent){onMqttConnected();})
+, mOnMqttDisconnected(mExecutionContext,[this](auto pEvent){onMqttDisconnected();}) {
     mInfoTopic = Core::stringPrintf("bittailor/home/device/%s/info", System::getId().c_str());
     mVitalsTopic = Core::stringPrintf("bittailor/home/device/%s/vitals", System::getId().c_str());
 }
@@ -46,12 +50,21 @@ std::string Vitals::vitalsJson() {
  void Vitals::onMqttConnected() {
     publishInfo();
     publishVitals();
-    mExecutionContext.callPeriodically(std::chrono::seconds(20),[this](auto&& pTimer){
+    ESP_LOGI(TAG, "Start vitals timer on MQTT disconnected");
+    mVitalsTimer = mExecutionContext.callPeriodically(std::chrono::seconds(20),[this](auto&& pTimer){
         publishVitals();
     });
  }
 
-  void Vitals::publishVitals(){
+ void Vitals::onMqttDisconnected() {
+     if(mVitalsTimer) {
+         ESP_LOGI(TAG, "Cancel vitals timer on MQTT disconnected");
+         mVitalsTimer->cancel();
+         mVitalsTimer = nullptr;
+     }
+ }
+
+void Vitals::publishVitals(){
     mMqtt.publish(mVitalsTopic.c_str(), vitalsJson());
  }
 

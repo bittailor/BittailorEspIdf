@@ -28,13 +28,16 @@ class Vitals
    
    private:
       void onMqttConnected();
+      void publishInfo();
       void publishVitals();
 
 
       Concurrency::I_SchedulingExecutionContext& mExecutionContext;
       Protocols::I_MqttController& mMqtt;
       Events::Subscription<Protocols::I_MqttController::Connected> mOnMqttConnected;
-      std::string mTopic;
+      std::string mInfoTopic;
+      std::string mVitalsTopic;
+
        
 };
 

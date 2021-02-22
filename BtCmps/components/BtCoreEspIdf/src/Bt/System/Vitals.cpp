@@ -6,9 +6,12 @@
 
 #include "Bt/System/Vitals.h"
 
+#include <string>
+
 #include <esp_heap_caps.h>
 #include <esp_system.h>
 #include <esp_timer.h>
+#include <esp_ota_ops.h>
 
 #include <ArduinoJson.h>
 
@@ -23,7 +26,8 @@ Vitals::Vitals(Concurrency::I_SchedulingExecutionContext& pExecutionContext, Pro
 : mExecutionContext(pExecutionContext)
 , mMqtt(pMqtt)
 , mOnMqttConnected(mExecutionContext,[this](auto pEvent){onMqttConnected();}) {
-    mTopic = Core::stringPrintf("bittailor/home/gateway/%s/vitals", System::getId().c_str());
+    mInfoTopic = Core::stringPrintf("bittailor/home/device/%s/info", System::getId().c_str());
+    mVitalsTopic = Core::stringPrintf("bittailor/home/device/%s/vitals", System::getId().c_str());
 }
 
 Vitals::~Vitals() {
@@ -40,15 +44,31 @@ std::string Vitals::vitalsJson() {
 } 
 
  void Vitals::onMqttConnected() {
-     publishVitals();
-     mExecutionContext.callPeriodically(std::chrono::seconds(20),[this](auto&& pTimer){
-         publishVitals();
-     });
+    publishInfo();
+    publishVitals();
+    mExecutionContext.callPeriodically(std::chrono::seconds(20),[this](auto&& pTimer){
+        publishVitals();
+    });
  }
 
- void Vitals::publishVitals(){
-     mMqtt.publish(mTopic.c_str(), vitalsJson());
+  void Vitals::publishVitals(){
+    mMqtt.publish(mVitalsTopic.c_str(), vitalsJson());
  }
+
+ void Vitals::publishInfo(){
+    auto appDescription = esp_ota_get_app_description();
+    std::string msg = Bt::Core::stringPrintf(
+        R"JSON({"id":"%s","project":"%s","version":"%s","date":"%s","time":"%s","esp-idf":"%s"})JSON",
+        System::getId().c_str(),
+        appDescription->project_name,
+        appDescription->version,
+        appDescription->date, 
+        appDescription->time,
+        appDescription->idf_ver
+    );    
+    mMqtt.publish(mInfoTopic.c_str(), msg, 2, true);
+ }
+
 
 } // namespace System
 } // namespace Bt

@@ -8,8 +8,8 @@ end
 testig_port = '/dev/cu.usbserial-1410'
 flash_port = '/dev/cu.usbserial-1410'
 
-# ota_device = '30:AE:A4:CC:47:68'
-ota_device = 'D8:A0:1D:5E:2E:00'
+ota_device = '30:AE:A4:CC:47:68'
+# ota_device = 'D8:A0:1D:5E:2E:00'
 
 apps = Rake::FileList["BtApps/*"].pathmap("%f")
 cmps = ['BtCmps']
@@ -208,13 +208,18 @@ apps.each do |app|
     # ota 
     namespace :ota do
         namespace :app do
-            task app => "build:app:#{app}" do
+            task app , [:device] => "build:app:#{app}"  do |task, args|
                 Dir.chdir("BtApps/#{app}") do
+                    device = args.device
+                    if !device
+                        puts "no device provided => use default OTA device #{ota_device}"
+                        device = ota_device
+                    end
                     puts
                     puts "#####################################################"
-                    puts "## OTA ==> #{app}"
+                    puts "## OTA ==> #{app} ==> #{device}" 
                     puts "#####################################################"
-                    sh "mosquitto_pub -h piOne.local -u ***REMOVED*** -P ***REMOVED*** -p 1883 -t bittailor/ota/#{ota_device}/data -q 2 -f build/#{app}.bin"
+                    # sh "mosquitto_pub -h piOne.local -u ***REMOVED*** -P ***REMOVED*** -p 1883 -t bittailor/ota/#{device}/data -q 2 -f build/#{app}.bin"
                 end 
             end
             task :all => "ota:app:#{app}"

@@ -1,0 +1,96 @@
+{
+  "name": "bt-device-manager",
+  "displayName": "BtDeviceManager",
+  "description": "BT Home Device Manager",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.53.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:bt-device-manager.helloWorld",
+    "onView:btDeviceExplorer"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "btDeviceExplorer.refresh",
+        "title": "Refresh BT Devices",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "btDeviceExplorer.restartDevice",
+        "title": "BT: restart device",
+        "icon": "$(debug-start)"
+      },
+      {
+        "command": "bt-device-manager.helloWorld",
+        "title": "Hello World"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "btDeviceExplorer.refresh",
+          "when": "view == btDeviceExplorer",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "btDeviceExplorer.restartDevice",
+          "when": "view == btDeviceExplorer && viewItem == BtDevice",
+          "group": "inline"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "btDevices",
+          "title": "BT Devices",
+          "icon": "$(symbol-method)"
+        }
+      ]
+    },
+    "views": {
+      "btDevices": [
+        {
+          "id": "btDeviceExplorer",
+          "name": "BT Device Explorer"
+        },
+        {
+          "id": "btLogsExplorer",
+          "name": "BT Logs Explorer"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^7.1.3",
+    "@types/mocha": "^8.0.4",
+    "@types/node": "^12.11.7",
+    "@types/vscode": "^1.53.0",
+    "@typescript-eslint/eslint-plugin": "^4.14.1",
+    "@typescript-eslint/parser": "^4.14.1",
+    "eslint": "^7.19.0",
+    "glob": "^7.1.6",
+    "mocha": "^8.2.1",
+    "typescript": "^4.1.3",
+    "vscode-test": "^1.5.0"
+  },
+  "dependencies": {
+    "mqtt": "^4.2.6"
+  }
+}

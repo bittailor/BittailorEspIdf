@@ -23,6 +23,9 @@
 		},
 		{
 			"path": "../Tooling"
+		},
+		{
+			"path": "../Tools/Extensions/bt-device-manager"
 		}
 	],
 	"settings": {

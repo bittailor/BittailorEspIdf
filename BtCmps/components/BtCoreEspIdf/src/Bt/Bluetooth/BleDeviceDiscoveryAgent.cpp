@@ -75,7 +75,7 @@ void BleDeviceDiscoveryAgent::onDiscover(ble_gap_event* pEvent) {
     ble_hs_adv_fields fields;
     int rc = ble_hs_adv_parse_fields(&fields, pEvent->disc.data, pEvent->disc.length_data);
     if (rc != 0) {
-        ESP_LOGW(TAG, "ble_hs_adv_parse_fields failed %d [%s](%s)", rc, address.toString().c_str(),Core::DefaultStringBuilder().hexencode(pEvent->disc.data, pEvent->disc.length_data).c_str());
+        ESP_LOGI(TAG, "Skip [%s] as ble_hs_adv_parse_fields failed with %d for (%s)",address.toString().c_str(), rc, Core::DefaultStringBuilder().hexencode(pEvent->disc.data, pEvent->disc.length_data).c_str());
     }
 
     if (fields.svc_data_uuid16 != NULL) {

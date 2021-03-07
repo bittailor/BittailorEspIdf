@@ -17,6 +17,7 @@ set(srcs
 	"src/Bt/System/OtaUpdate.cpp"
 	"src/Bt/System/System.cpp"
 	"src/Bt/System/Vitals.cpp"
+	"src/Bt/Ui/LedStrip.cpp"
 )
 
 if(CONFIG_BT_NIMBLE_ENABLED)

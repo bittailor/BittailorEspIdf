@@ -16,6 +16,9 @@
 			"path": "../BtApps/BtSketchAtcMi"
 		},
 		{
+			"path": "../BtApps/BtSketchLedStrip"
+		},
+		{
 			"path": "../BtCmps"
 		},
 		{

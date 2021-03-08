@@ -76,46 +76,50 @@ void executionContext(void* pContext)
    Bt::System::OtaUpdate otaUpdate(mainExecutionContext, mqttController);
    Bt::System::Vitals vitals(mainExecutionContext,mqttController);
    
-   Bt::Ui::LedStrip mLedStrip(GPIO_NUM_5, RMT_CHANNEL_0, NUMBER_OF_LEDS);
-   mLedStrip.clear();
-   mLedStrip.refresh();
+   Bt::Ui::LedStrip ledStrip(GPIO_NUM_5, RMT_CHANNEL_0, NUMBER_OF_LEDS);
+   ledStrip.clear();
+   ledStrip.refresh();
    
-   size_t index = 0;
-   uint16_t pHue = 0;
-   uint8_t pVal = 50;
-   //uint16_t pHueInc = (std::numeric_limits<uint16_t>::max()/NUMBER_OF_LEDS)/2;
+   uint8_t hsvValue = 50;
+   uint8_t hsvSaturation = 255;
    uint16_t pHueInc = (std::numeric_limits<uint16_t>::max()/NUMBER_OF_LEDS);
-   mLedStrip.clear();
-   mLedStrip.setPixel(index++, Bt::Ui::Color::fromHSV(pHue,255,10));
-   mLedStrip.refresh();
-
-   mainExecutionContext.callPeriodically(10ms,[&mLedStrip,&index,&pHue,&pHueInc,&pVal](auto& pTimer){
-      pHue+=pHueInc;
-      //mLedStrip.clear();
-      mLedStrip.setPixel(index++, Bt::Ui::Color::fromHSV(pHue, 255, pVal));
-      mLedStrip.refresh();
-      index = index % NUMBER_OF_LEDS;
-      
-      /*
-      if(index == 0) {
-         pVal+=2;   
+  
+   std::function<void()> refresh = [&ledStrip,&pHueInc,&hsvSaturation,&hsvValue](){
+      for (size_t i = 0; i < NUMBER_OF_LEDS; i++)
+      {
+         ledStrip.setPixel(i, Bt::Ui::Color::fromHSV(i*pHueInc, hsvSaturation, hsvValue));
       }
-      */
-
-      esp_task_wdt_reset();
-   });
+      ledStrip.refresh();
+   };
 
    Bt::Protocols::MqttMessageSubscription mColorValueSubscription(
       mainExecutionContext,
       mqttController, 
       Bt::Core::stringPrintf("bittailor/ledstrip/%s/rgb/hsv/value",Bt::System::getId().c_str()), 
       2, 
-      [&pVal](std::shared_ptr<Bt::Protocols::MqttMessage> pMessage){
+      [&refresh,&hsvValue](std::shared_ptr<Bt::Protocols::MqttMessage> pMessage){
          int value = std::stoi(pMessage->data);
-         ESP_LOGI(TAG, "mqtt => %s => %d", pMessage->data.c_str(), value);
-         pVal = value;
+         ESP_LOGI(TAG, "mqtt value => %s => %d", pMessage->data.c_str(), value);
+         hsvValue = value;
+         refresh();
       }
-   ); 
+   );
+   Bt::Protocols::MqttMessageSubscription mColorSaturationSubscription(
+      mainExecutionContext,
+      mqttController, 
+      Bt::Core::stringPrintf("bittailor/ledstrip/%s/rgb/hsv/saturation",Bt::System::getId().c_str()), 
+      2, 
+      [&refresh,&hsvSaturation](std::shared_ptr<Bt::Protocols::MqttMessage> pMessage){
+         int saturation = std::stoi(pMessage->data);
+         ESP_LOGI(TAG, "mqtt saturation => %s => %d", pMessage->data.c_str(), saturation);
+         hsvSaturation = saturation;
+         refresh();
+      }
+   );  
+
+   mainExecutionContext.callOnce(10ms,[&refresh](){
+       refresh();   
+   });
 
    mainExecutionContext.callPeriodically(10s,[](auto& pTimer){
        ESP_LOGI(TAG, "10s tick");   

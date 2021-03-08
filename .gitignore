@@ -5,8 +5,6 @@
 sdkconfig.old
 sdkconfig.backup
 
-BtApps/*/sdkconfig
-
 # ESP-IDF default build directory name
 build
 

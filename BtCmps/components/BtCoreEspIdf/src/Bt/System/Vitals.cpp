@@ -13,9 +13,9 @@
 #include <esp_timer.h>
 #include <esp_ota_ops.h>
 
-#include <ArduinoJson.h>
 
 #include <Bt/Core/StringUtilities.h>
+#include <Bt/Core/Logging.h>
 
 #include "Bt/System/I_System.h"
 
@@ -38,13 +38,14 @@ Vitals::~Vitals() {
 }
 
 std::string Vitals::vitalsJson() {
-    DynamicJsonDocument doc(1024);
-    auto heap = doc.createNestedObject("heap");          
-    heap["free"].set(esp_get_free_heap_size());
-    heap["min"].set(esp_get_minimum_free_heap_size());
-    heap["block"].set(heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT));               
-    doc["uptime"].set(esp_timer_get_time());
-    return doc.as<std::string>();
+    std::string msg = Bt::Core::stringPrintf( 
+        R"JSON({"heap":{"free":%u,"min":%u,"block":%u},"uptime":%llu})JSON",
+        esp_get_free_heap_size(),
+        esp_get_minimum_free_heap_size(),
+        heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT),
+        esp_timer_get_time()
+    );
+    return msg;
 } 
 
  void Vitals::onMqttConnected() {

@@ -14,7 +14,6 @@
 #include <Bt/Core/StringBuilder.h>
 #include <Bt/Core/StringUtilities.h>
 #include <Bt/Core/Singleton.h>
-#include <Bt/Bluetooth/BleController.h>
 #include <Bt/Core/Time.h>
 #include <Bt/Core/Timezone.h>
 #include <Bt/Events/Events.h>
@@ -30,12 +29,6 @@
 #include <Bt/Ui/LedStrip.h>
 
 using namespace std::chrono_literals;
-
-constexpr Bt::Bluetooth::BleUuid cServiceUuid =  
-            Bt::Bluetooth::BleUuid::from128BitBE(
-               Bt::Bluetooth::BleUuid::Uuid128Bit{
-                0x00,0x00,0x18,0x1a, 0x00,0x00, 0x10, 0x00, 0x80,0x00, 0x00,0x80,0x5f,0x9b,0x34,0xfb
-            });
 
 constexpr const char* TAG = "Main";
 Bt::Concurrency::CountdownLatch sMainExitLatch(1);
@@ -61,7 +54,7 @@ void executionContext(void* pContext)
 
    Bt::Concurrency::SchedulingExecutionContext mainExecutionContext(time);
 
-   Bt::Network::WiFiController wiFiController(mainExecutionContext, defaultEventLoop, CONFIG_BT_SKETCH_ATC_MI_WIFI_SSID, CONFIG_BT_SKETCH_ATC_MI_WIFI_PASSWORD);
+   Bt::Network::WiFiController wiFiController(mainExecutionContext, defaultEventLoop, CONFIG_BT_SKETCH_LED_STRIP_WIFI_SSID, CONFIG_BT_SKETCH_LED_STRIP_WIFI_PASSWORD);
    Bt::Protocols::SntpController sntpController(defaultEventLoop);
 
 

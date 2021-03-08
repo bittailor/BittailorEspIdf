@@ -262,8 +262,17 @@ apps.each do |app|
     end  
 end
 
+task :config_backup do 
+    sdkconfigs = FileList.new('**/sdkconfig')
+    sdkconfigs.each do |sdkconfig|
+        puts "#{sdkconfig} => #{sdkconfig}.backup" 
+        FileUtils.cp(sdkconfig, "#{sdkconfig}.backup")
+    end    
+end 
+
 task :default => ['build:all', 'test:host:all']
 task :ci => ['build:all', 'test:host:all']
 
 task :build => 'build:all'
+task :clean => 'clean:all'
 task :test => ['build:all', 'test::all']

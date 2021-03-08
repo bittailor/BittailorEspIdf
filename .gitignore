@@ -5,9 +5,7 @@
 sdkconfig.old
 sdkconfig.backup
 
-BtApps/BtMijiaBleSensorGateway/sdkconfig
-BtApps/BtAppAlarmClock/sdkconfig
-BtApps/BtSketchOta/sdkconfig
+BtApps/*/sdkconfig
 
 # ESP-IDF default build directory name
 build

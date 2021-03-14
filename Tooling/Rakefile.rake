@@ -1,4 +1,5 @@
 require 'rubygems'
+require 'json'
 begin
     require 'serialport'
 rescue LoadError
@@ -17,6 +18,12 @@ hosts = ['BtHostTests']
 
 def idf_sh(cmd)
     return sh(". $HOME/esp/esp-idf/export.sh && " + cmd)
+end
+
+def load_secrets()
+    file = 'Tooling/secrets.json'
+    raise "'#{file}' not found in #{Dir.pwd}" if !File.exists?(file) 
+    secrets = JSON.parse(IO.read(file))
 end
 
 hosts.each do |host|
@@ -209,6 +216,7 @@ apps.each do |app|
     namespace :ota do
         namespace :app do
             task app , [:device] => "build:app:#{app}"  do |task, args|
+                secrets = load_secrets();
                 Dir.chdir("BtApps/#{app}") do
                     device = args.device
                     if !device
@@ -219,7 +227,7 @@ apps.each do |app|
                     puts "#####################################################"
                     puts "## OTA ==> #{app} ==> #{device}" 
                     puts "#####################################################"
-                    sh "mosquitto_pub -h piOne.local -u ***REMOVED*** -P ***REMOVED*** -p 1883 -t bittailor/ota/#{device}/data -q 2 -f build/#{app}.bin"
+                    sh "mosquitto_pub -h piOne.local -u #{secrets['mqtt']['user']} -P #{secrets['mqtt']['password']} -p 1883 -t bittailor/ota/#{device}/data -q 2 -f build/#{app}.bin"
                 end 
             end
             task :all => "ota:app:#{app}"
@@ -230,13 +238,20 @@ apps.each do |app|
     # restart 
     namespace :restart do
         namespace :app do
-            task app do
+            task app , [:device] do |task, args|
+                secrets = load_secrets();
+                puts secrets
                 Dir.chdir("BtApps/#{app}") do
+                    device = args.device
+                    if !device
+                        puts "no device provided => use default OTA device #{ota_device}"
+                        device = ota_device
+                    end
                     puts
                     puts "#####################################################"
-                    puts "## RESTART ==> #{app}"
+                    puts "## RESTART ==> #{device}"
                     puts "#####################################################"
-                    sh "mosquitto_pub -h piOne.local -u ***REMOVED*** -P ***REMOVED*** -p 1883 -t bittailor/ota/#{ota_device}/restart -q 2 -m \"restart\" "
+                    sh "mosquitto_pub -h piOne.local -u #{secrets['mqtt']['user']} -P #{secrets['mqtt']['password']} -p 1883 -t bittailor/ota/#{device}/restart -q 2 -m \"restart\" "
                 end 
             end
             task :all => "restart:app:#{app}"
@@ -278,6 +293,15 @@ task :config_backup do
     end    
 end 
 
+task :config_restore do 
+    sdkconfigs = FileList.new('**/sdkconfig.backup')
+    sdkconfigs.each do |sdkconfig|
+        orig = sdkconfig.gsub(".backup","")
+        puts "#{sdkconfig} => #{orig}" 
+        FileUtils.cp(sdkconfig, orig)
+    end    
+end 
+
 task :config_delete do 
     sdkconfigs = FileList.new('**/sdkconfig')
     sdkconfigs.each do |sdkconfig|
@@ -290,4 +314,4 @@ task :ci => ['build:all', 'test:host:all']
 
 task :build => 'build:all'
 task :clean => 'clean:all'
-task :test => ['build:all', 'test::all']
+task :test => ['build:all', 'test:all']

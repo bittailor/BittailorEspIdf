@@ -5,6 +5,7 @@
 sdkconfig
 sdkconfig.old
 sdkconfig.backup
+secrets.json
 
 # ESP-IDF default build directory name
 build

@@ -24,7 +24,7 @@ namespace Protocols {
 class MqttController : public I_MqttController
 {
    public:
-      MqttController(Events::I_EventLoop& pEventLoop, const std::string& pBrokerUri, std::function<void(esp_mqtt_client_config_t&)> pConfigure = nullptr);
+      MqttController(Events::I_EventLoop& pEventLoop, std::function<void(esp_mqtt_client_config_t&)> pConfigure = nullptr);
       MqttController(const MqttController&) = delete;
       MqttController& operator=(const MqttController&) = delete;
       ~MqttController();

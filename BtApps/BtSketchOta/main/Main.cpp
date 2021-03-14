@@ -52,17 +52,10 @@ void executionContext(void* pContext)
 
    Bt::Concurrency::SchedulingExecutionContext mainExecutionContext(time);
 
-   Bt::Network::WiFiController wiFiController(mainExecutionContext, defaultEventLoop, CONFIG_BT_SKETCH_OTA_WIFI_SSID, CONFIG_BT_SKETCH_OTA_WIFI_PASSWORD);
+   Bt::Network::WiFiController wiFiController(mainExecutionContext, defaultEventLoop);
    Bt::Protocols::SntpController sntpController(defaultEventLoop);
 
-
-   Bt::Protocols::MqttController mqttController(defaultEventLoop,
-                                                "mqtt://piOne.local",
-                                                [](esp_mqtt_client_config_t& cfg){
-                                                      cfg.username = "***REMOVED***";
-                                                      cfg.password = "***REMOVED***";
-
-                                                });
+   Bt::Protocols::MqttController mqttController(defaultEventLoop);
 
    Bt::System::OtaUpdate otaUpdate(mainExecutionContext, mqttController);
    

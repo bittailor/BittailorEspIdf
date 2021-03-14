@@ -9,6 +9,8 @@
 #include <mutex>
 #include <cstring>
 
+#include <sdkconfig.h>
+
 #include "Bt/Network/Tag.h"
 
 namespace Bt {

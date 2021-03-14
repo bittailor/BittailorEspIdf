@@ -10,8 +10,9 @@
 #include <stdexcept>
 #include <vector>
 
-#include <Bt/Events/Events.h>
+#include <sdkconfig.h>
 
+#include <Bt/Events/Events.h>
 #include "Bt/Protocols/Mqtt/Mqtt.h"
 #include "Bt/Protocols/MqttSubscription.h"
 #include "Bt/Protocols/Tag.h"
@@ -49,11 +50,13 @@ void MqttController::mqttEventHandler(void* pHandlerArg, esp_event_base_t pEvent
 }
 
 
-MqttController::MqttController(Events::I_EventLoop& pEventLoop, const std::string& pBrokerUri, std::function<void(esp_mqtt_client_config_t&)> pConfigure)
-: mBrokerUri(pBrokerUri)
+MqttController::MqttController(Events::I_EventLoop& pEventLoop, std::function<void(esp_mqtt_client_config_t&)> pConfigure)
+: mBrokerUri(CONFIG_BITTAILOR_MQTT_URI)
 , mIpEvents(pEventLoop, IP_EVENT, IP_EVENT_STA_GOT_IP,[this](esp_event_base_t pEventBase, int32_t pEventId, void* pEventData){onIpEvent(static_cast<ip_event_t>(pEventId),pEventData);}) {
    esp_mqtt_client_config_t cfg = {};
    cfg.uri = mBrokerUri.c_str();
+   cfg.username = CONFIG_BITTAILOR_MQTT_USERNAME;
+   cfg.password = CONFIG_BITTAILOR_MQTT_PASSWORD;
    if(pConfigure) {
       pConfigure(cfg);
    }

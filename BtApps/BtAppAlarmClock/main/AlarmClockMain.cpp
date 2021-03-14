@@ -78,18 +78,11 @@ void alarmClockMain(void* pContext)
 
    Bt::Concurrency::SchedulingExecutionContext mainExecutionContext(time);
 
-   Bt::Network::WiFiController wiFiController(mainExecutionContext, defaultEventLoop, CONFIG_BT_ALARM_CLOCK_WIFI_SSID, CONFIG_BT_ALARM_CLOCK_WIFI_PASSWORD);
+   Bt::Network::WiFiController wiFiController(mainExecutionContext, defaultEventLoop);
    Bt::Protocols::SntpController sntpController(defaultEventLoop);
 
 
-   Bt::Protocols::MqttController mqttController(defaultEventLoop,
-                                                CONFIG_BT_ALARM_CLOCK_MQTT_URI,
-                                                [](esp_mqtt_client_config_t& cfg){
-                                                      cfg.client_id = CONFIG_BT_ALARM_CLOCK_MQTT_CLIENT_ID;
-                                                      cfg.username = CONFIG_BT_ALARM_CLOCK_MQTT_USERNAME;
-                                                      cfg.password = CONFIG_BT_ALARM_CLOCK_MQTT_PASSWORD;
-                                                });
-
+   Bt::Protocols::MqttController mqttController(defaultEventLoop);
 
    Bt::AlarmClock::Clock clock(mainExecutionContext, time, timezone);
 
@@ -103,7 +96,6 @@ void alarmClockMain(void* pContext)
    Bt::Peripherals::PwmOut blue(ledsPwmTimer, LEDC_CHANNEL_3, GPIO_NUM_22);
    Bt::Peripherals::RgbLed rgbLed(red, green, blue, true);
    Bt::AlarmClock::DisplayBacklight displayBacklight(mainExecutionContext, rgbLed);
-
 
    Bt::AlarmClock::AlarmActor alarmActor(mainExecutionContext, buzzer);
    Bt::AlarmClock::AlarmController alarmController(mainExecutionContext, time, timezone, alarmActor);

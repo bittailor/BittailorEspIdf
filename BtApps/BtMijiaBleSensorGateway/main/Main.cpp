@@ -61,18 +61,11 @@ void executionContext(void* pContext)
 
    Bt::Concurrency::SchedulingExecutionContext mainExecutionContext(time);
 
-   Bt::Network::WiFiController wiFiController(mainExecutionContext, defaultEventLoop, CONFIG_BT_MIIJA_GATEWAY_WIFI_SSID, CONFIG_BT_MIIJA_GATEWAY_WIFI_PASSWORD);
+   Bt::Network::WiFiController wiFiController(mainExecutionContext, defaultEventLoop);
    Bt::Protocols::SntpController sntpController(defaultEventLoop);
 
 
-   Bt::Protocols::MqttController mqttController(defaultEventLoop,
-                                                CONFIG_BT_MIIJA_GATEWAY_MQTT_URI,
-                                                [](esp_mqtt_client_config_t& cfg){
-                                                      // cfg.client_id = CONFIG_BT_MIIJA_GATEWAY_MQTT_CLIENT_ID;
-                                                      cfg.username = CONFIG_BT_MIIJA_GATEWAY_MQTT_USERNAME;
-                                                      cfg.password = CONFIG_BT_MIIJA_GATEWAY_MQTT_PASSWORD;
-                                                });
-
+   Bt::Protocols::MqttController mqttController(defaultEventLoop);
    
    Bt::System::OtaUpdate otaUpdate(mainExecutionContext, mqttController);
    Bt::System::Vitals vitals(mainExecutionContext,mqttController);

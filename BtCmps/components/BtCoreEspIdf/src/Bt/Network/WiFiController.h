@@ -19,7 +19,7 @@ namespace Network {
 class WiFiController
 {
    public:
-      WiFiController(Concurrency::I_SchedulingExecutionContext& pExecutionContext, Events::I_EventLoop& pEventLoop, const char* pSsid, const char* pPassword);
+      WiFiController(Concurrency::I_SchedulingExecutionContext& pExecutionContext, Events::I_EventLoop& pEventLoop, const char* pSsid = CONFIG_BITTAILOR_WIFI_SSID, const char* pPassword = CONFIG_BITTAILOR_WIFI_PASSWORD);
       WiFiController(const WiFiController&) = delete;
       WiFiController& operator=(const WiFiController&) = delete;
       ~WiFiController();

@@ -277,36 +277,42 @@ apps.each do |app|
     end  
 end
 
-task :config_list do 
-    sdkconfigs = FileList.new('**/sdkconfig')
-    sdkconfigs.each do |sdkconfig|
-        puts sdkconfig 
-    end    
+task :log do 
+    secrets = load_secrets();
+    sh "mosquitto_sub -h piOne.local -u #{secrets['mqtt']['user']} -P #{secrets['mqtt']['password']} -t bittailor/develop/uartgateway/370020000a47343232363230/uart/raw"
 end
 
+namespace :config do
+    task :list do 
+        sdkconfigs = FileList.new('**/sdkconfig')
+        sdkconfigs.each do |sdkconfig|
+            puts sdkconfig 
+        end    
+    end
 
-task :config_backup do 
-    sdkconfigs = FileList.new('**/sdkconfig')
-    sdkconfigs.each do |sdkconfig|
-        puts "#{sdkconfig} => #{sdkconfig}.backup" 
-        FileUtils.cp(sdkconfig, "#{sdkconfig}.backup")
-    end    
-end 
+    task :backup do 
+        sdkconfigs = FileList.new('**/sdkconfig')
+        sdkconfigs.each do |sdkconfig|
+            puts "#{sdkconfig} => #{sdkconfig}.backup" 
+            FileUtils.cp(sdkconfig, "#{sdkconfig}.backup")
+        end    
+    end 
 
-task :config_restore do 
-    sdkconfigs = FileList.new('**/sdkconfig.backup')
-    sdkconfigs.each do |sdkconfig|
-        orig = sdkconfig.gsub(".backup","")
-        puts "#{sdkconfig} => #{orig}" 
-        FileUtils.cp(sdkconfig, orig)
-    end    
-end 
+    task :restore do 
+        sdkconfigs = FileList.new('**/sdkconfig.backup')
+        sdkconfigs.each do |sdkconfig|
+            orig = sdkconfig.gsub(".backup","")
+            puts "#{sdkconfig} => #{orig}" 
+            FileUtils.cp(sdkconfig, orig)
+        end    
+    end 
 
-task :config_delete do 
-    sdkconfigs = FileList.new('**/sdkconfig')
-    sdkconfigs.each do |sdkconfig|
-        FileUtils.rm(sdkconfig) 
-    end    
+    task :delete do 
+        sdkconfigs = FileList.new('**/sdkconfig')
+        sdkconfigs.each do |sdkconfig|
+            FileUtils.rm(sdkconfig) 
+        end    
+    end
 end
 
 task :default => ['build:all', 'test:host:all']

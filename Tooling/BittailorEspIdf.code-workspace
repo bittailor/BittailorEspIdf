@@ -19,6 +19,9 @@
 			"path": "../BtApps/BtSketchLedStrip"
 		},
 		{
+			"path": "../BtApps/BtSketchEPaper"
+		},
+		{
 			"path": "../BtCmps"
 		},
 		{

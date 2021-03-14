@@ -73,8 +73,8 @@ export class BtDeviceExplorer {
         vscode.commands.registerCommand('btDeviceExplorer.restartDevice', (device: BtDevice) => this.restartDevice(device));
 		
         this.client = mqtt.connect('mqtt://piOne.local',{
-            username: '***REMOVED***',
-            password: '***REMOVED***'    
+            username: 'myUser',
+            password: 'myPasswords'    
         })
 
         this.client.on('connect',  (err) => {

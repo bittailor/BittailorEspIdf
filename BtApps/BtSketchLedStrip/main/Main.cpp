@@ -33,7 +33,8 @@ using namespace std::chrono_literals;
 constexpr const char* TAG = "Main";
 Bt::Concurrency::CountdownLatch sMainExitLatch(1);
 
-constexpr size_t NUMBER_OF_LEDS = 45;
+constexpr size_t RING_NUMBER_OF_LEDS = 45;
+constexpr size_t SQUARE_NUMBER_OF_LEDS = 64;
  
 void executionContext(void* pContext)
 {
@@ -62,20 +63,31 @@ void executionContext(void* pContext)
    Bt::System::OtaUpdate otaUpdate(mainExecutionContext, mqttController);
    Bt::System::Vitals vitals(mainExecutionContext,mqttController);
    
-   Bt::Ui::LedStrip ledStrip(GPIO_NUM_5, RMT_CHANNEL_0, NUMBER_OF_LEDS);
-   ledStrip.clear();
-   ledStrip.refresh();
+   Bt::Ui::LedStrip ledStripRing(Bt::Ui::LedStrip::SK6812, GPIO_NUM_10, RMT_CHANNEL_0, RING_NUMBER_OF_LEDS);
+   Bt::Ui::LedStrip ledStripSquare(Bt::Ui::LedStrip::WS2812B, GPIO_NUM_5, RMT_CHANNEL_1, SQUARE_NUMBER_OF_LEDS);
+   
+   ledStripSquare.clear();
+   ledStripSquare.refresh();
    
    uint8_t hsvValue = 50;
    uint8_t hsvSaturation = 255;
-   uint16_t pHueInc = (std::numeric_limits<uint16_t>::max()/NUMBER_OF_LEDS);
+   uint16_t pHueInc = (std::numeric_limits<uint16_t>::max()/SQUARE_NUMBER_OF_LEDS);
   
-   std::function<void()> refresh = [&ledStrip,&pHueInc,&hsvSaturation,&hsvValue](){
-      for (size_t i = 0; i < NUMBER_OF_LEDS; i++)
+   std::function<void()> count = [&ledStripSquare,&pHueInc,&hsvSaturation,&hsvValue](){
+      for (size_t i = 0; i < SQUARE_NUMBER_OF_LEDS; i++)
       {
-         ledStrip.setPixel(i, Bt::Ui::Color::fromHSV(i*pHueInc, hsvSaturation, hsvValue));
+         ledStripSquare.setPixel(i, Bt::Ui::Color::fromHSV(0, hsvSaturation, hsvValue));
+         ledStripSquare.refresh();
+         vTaskDelay(100/portTICK_PERIOD_MS);
       }
-      ledStrip.refresh();
+   };
+
+   std::function<void()> refresh = [&ledStripSquare,&pHueInc,&hsvSaturation,&hsvValue](){
+      for (size_t i = 0; i < SQUARE_NUMBER_OF_LEDS; i++)
+      {
+         ledStripSquare.setPixel(i, Bt::Ui::Color::fromHSV(i*pHueInc, hsvSaturation, hsvValue));
+      }
+      ledStripSquare.refresh();
    };
 
    Bt::Protocols::MqttMessageSubscription mColorValueSubscription(
@@ -103,9 +115,14 @@ void executionContext(void* pContext)
       }
    );  
 
-   mainExecutionContext.callOnce(10ms,[&refresh](){
+   mainExecutionContext.callOnce(10ms,[&count,&refresh,&mainExecutionContext](){
+       count();
+       mainExecutionContext.callOnce(10ms,[&refresh](){
        refresh();   
+   });   
    });
+
+   
 
    mainExecutionContext.callPeriodically(10s,[](auto& pTimer){
        ESP_LOGI(TAG, "10s tick");   

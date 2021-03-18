@@ -19,7 +19,9 @@ namespace Ui {
 class LedStrip
 {
    public:
-      LedStrip(gpio_num_t pPin, rmt_channel_t pRtmChannel, size_t pNumberOfLeds);
+      enum Type {SK6812,WS2812B/*,WS2811*/};
+
+      LedStrip(Type pType, gpio_num_t pPin, rmt_channel_t pRtmChannel, size_t pNumberOfLeds);
       LedStrip(const LedStrip&) = delete;
       LedStrip& operator=(const LedStrip&) = delete;
       ~LedStrip();
@@ -29,6 +31,7 @@ class LedStrip
       void refresh();
 
    private:
+      Type mType;
       size_t mNumberOfLeds;
       std::vector<uint8_t> mBuffer;
       rmt_config_t mConfig;

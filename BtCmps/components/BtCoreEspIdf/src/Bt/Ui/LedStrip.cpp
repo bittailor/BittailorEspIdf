@@ -20,7 +20,11 @@ namespace {
     constexpr uint32_t SK6812_T1H_NS = 600;
     constexpr uint32_t SK6812_T1L_NS = 600;
 
-    
+    constexpr uint32_t WS2812B_T0H_NS = 400;
+    constexpr uint32_t WS2812B_T0L_NS = 850;
+    constexpr uint32_t WS2812B_T1H_NS = 800;
+    constexpr uint32_t WS2812B_T1L_NS = 450;
+
     constexpr uint8_t GAMMA_TABLE[256] = {
         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
         0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  1,
@@ -48,11 +52,7 @@ namespace {
         );
     }    
 
-    rmt_item32_t sk6812_bit0;
-    rmt_item32_t sk6812_bit1;
-
-
-    void IRAM_ATTR bt_rmt_adapter(const void* src, rmt_item32_t* dest, size_t src_size, size_t wanted_num, size_t* translated_size, size_t* item_num, const rmt_item32_t& bit0, const rmt_item32_t& bit1)
+    void IRAM_ATTR btRmtTiming(const void* src, rmt_item32_t* dest, size_t src_size, size_t wanted_num, size_t* translated_size, size_t* item_num, const rmt_item32_t& bit0, const rmt_item32_t& bit1)
     {
         if (src == nullptr || dest == nullptr) {
             *translated_size = 0;
@@ -82,15 +82,36 @@ namespace {
         *item_num = num;
     }
 
-    void IRAM_ATTR sk6812_rmt_adapter(const void *src, rmt_item32_t *dest, size_t src_size,
+    struct RmtTiming {
+        rmt_item32_t bit0;    
+        rmt_item32_t bit1;
+        sample_to_rmt_t function;    
+    };
+    RmtTiming sRmtTimings[RMT_CHANNEL_MAX];
+
+    template<int Channel>
+    void IRAM_ATTR tpRmtTiming(const void *src, rmt_item32_t *dest, size_t src_size,
             size_t wanted_num, size_t *translated_size, size_t *item_num)
     {
-        bt_rmt_adapter(src, dest, src_size, wanted_num, translated_size, item_num, sk6812_bit0, sk6812_bit1);
+        btRmtTiming(src, dest, src_size, wanted_num, translated_size, item_num, sRmtTimings[Channel].bit0, sRmtTimings[Channel].bit1);
     }
+
+    sample_to_rmt_t sRmtFunctions[] = {
+        tpRmtTiming<RMT_CHANNEL_0>,    
+        tpRmtTiming<RMT_CHANNEL_1>,    
+        tpRmtTiming<RMT_CHANNEL_2>,    
+        tpRmtTiming<RMT_CHANNEL_3>, 
+    #if SOC_RMT_CHANNELS_NUM > 4   
+        tpRmtTiming<RMT_CHANNEL_4>,    
+        tpRmtTiming<RMT_CHANNEL_5>,   
+        tpRmtTiming<RMT_CHANNEL_6>,    
+        tpRmtTiming<RMT_CHANNEL_7>, 
+    #endif
+    };
 }
 
-LedStrip::LedStrip(gpio_num_t pPin, rmt_channel_t pRtmChannel, size_t pNumberOfLeds)
-: mNumberOfLeds(pNumberOfLeds), mBuffer(pNumberOfLeds * 3,0) {
+LedStrip::LedStrip(Type pType, gpio_num_t pPin, rmt_channel_t pRtmChannel, size_t pNumberOfLeds)
+: mType(pType), mNumberOfLeds(pNumberOfLeds), mBuffer(pNumberOfLeds * 3,0) {
     {
         rmt_config_t config = RMT_DEFAULT_CONFIG_TX(pPin, pRtmChannel);
         mConfig = config;
@@ -104,16 +125,33 @@ LedStrip::LedStrip(gpio_num_t pPin, rmt_channel_t pRtmChannel, size_t pNumberOfL
     ESP_ERROR_CHECK(rmt_get_counter_clock(mConfig.channel, &counter_clk_hz));
     float ratio = (float)counter_clk_hz / 1e9;
     
-    sk6812_bit0.duration0 = ratio * SK6812_T0H_NS;
-    sk6812_bit0.level0 = 1;
-    sk6812_bit0.duration1 = ratio * SK6812_T0L_NS;
-    sk6812_bit0.level1 = 0;
-    sk6812_bit1.duration0 = ratio * SK6812_T1H_NS;
-    sk6812_bit1.level0 = 1;
-    sk6812_bit1.duration1 = ratio * SK6812_T1L_NS;
-    sk6812_bit1.level1 = 0;
+    switch (mType)
+    {
+        case SK6812: {
+            sRmtTimings[pRtmChannel].bit0.duration0 = ratio * SK6812_T0H_NS;
+            sRmtTimings[pRtmChannel].bit0.level0 = 1;
+            sRmtTimings[pRtmChannel].bit0.duration1 = ratio * SK6812_T0L_NS;
+            sRmtTimings[pRtmChannel].bit0.level1 = 0;
+            sRmtTimings[pRtmChannel].bit1.duration0 = ratio * SK6812_T1H_NS;
+            sRmtTimings[pRtmChannel].bit1.level0 = 1;
+            sRmtTimings[pRtmChannel].bit1.duration1 = ratio * SK6812_T1L_NS;
+            sRmtTimings[pRtmChannel].bit1.level1 = 0; 
+               
+        }break;
+        case WS2812B: {
+            sRmtTimings[pRtmChannel].bit0.duration0 = ratio * WS2812B_T0H_NS;
+            sRmtTimings[pRtmChannel].bit0.level0 = 1;
+            sRmtTimings[pRtmChannel].bit0.duration1 = ratio * WS2812B_T0L_NS;
+            sRmtTimings[pRtmChannel].bit0.level1 = 0;
+            sRmtTimings[pRtmChannel].bit1.duration0 = ratio * WS2812B_T1H_NS;
+            sRmtTimings[pRtmChannel].bit1.level0 = 1;
+            sRmtTimings[pRtmChannel].bit1.duration1 = ratio * WS2812B_T1L_NS;
+            sRmtTimings[pRtmChannel].bit1.level1 = 0;  
+        }break;
+    }
 
-    rmt_translator_init(mConfig.channel, sk6812_rmt_adapter);
+    rmt_translator_init(mConfig.channel, sRmtFunctions[pRtmChannel]);
+
 
 }
 

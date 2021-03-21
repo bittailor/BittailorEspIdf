@@ -26,22 +26,19 @@
 #include <Bt/System/System.h>
 #include <Bt/System/OtaUpdate.h>
 #include <Bt/System/Vitals.h>
+#include <Bt/Ui/I_LedStrip.h>
 #include <Bt/Ui/LedStrip.h>
 
 using namespace std::chrono_literals;
 
 constexpr const char* TAG = "Main";
 Bt::Concurrency::CountdownLatch sMainExitLatch(1);
-
-constexpr size_t RING_NUMBER_OF_LEDS = 45;
-constexpr size_t SQUARE_NUMBER_OF_LEDS = 64;
  
 void executionContext(void* pContext)
 {
    ESP_LOGI(TAG, "Startup:");
    ESP_LOGI(TAG, " - Free memory : %d bytes", esp_get_free_heap_size());
    ESP_LOGI(TAG, " - Free stack  : %d bytes", uxTaskGetStackHighWaterMark(xTaskGetCurrentTaskHandle()));
-
 
    Bt::System::System system;
    Bt::Core::Singleton<Bt::System::I_System>::Instance systemSingleton(system); 
@@ -63,31 +60,45 @@ void executionContext(void* pContext)
    Bt::System::OtaUpdate otaUpdate(mainExecutionContext, mqttController);
    Bt::System::Vitals vitals(mainExecutionContext,mqttController);
    
-   Bt::Ui::LedStrip ledStripRing(Bt::Ui::LedStrip::SK6812, GPIO_NUM_10, RMT_CHANNEL_0, RING_NUMBER_OF_LEDS);
-   Bt::Ui::LedStrip ledStripSquare(Bt::Ui::LedStrip::WS2812B, GPIO_NUM_5, RMT_CHANNEL_1, SQUARE_NUMBER_OF_LEDS);
    
-   ledStripSquare.clear();
-   ledStripSquare.refresh();
+   std::vector<std::shared_ptr<Bt::Ui::I_LedStrip>> strips{
+      std::make_shared<Bt::Ui::LedStrip>(Bt::Ui::LedStrip::WS2812B, GPIO_NUM_5, RMT_CHANNEL_0, 64),
+      std::make_shared<Bt::Ui::LedStrip>(Bt::Ui::LedStrip::SK6812, GPIO_NUM_18, RMT_CHANNEL_1, 45),
+      std::make_shared<Bt::Ui::LedStrip>(Bt::Ui::LedStrip::WS2811, GPIO_NUM_23, RMT_CHANNEL_2, 16),
+   };
    
-   uint8_t hsvValue = 50;
+   for (auto strip : strips)
+   {
+      strip->clear();
+      strip->refresh();   
+   }
+   
+   uint8_t hsvValue = 35;
    uint8_t hsvSaturation = 255;
-   uint16_t pHueInc = (std::numeric_limits<uint16_t>::max()/SQUARE_NUMBER_OF_LEDS);
-  
-   std::function<void()> count = [&ledStripSquare,&pHueInc,&hsvSaturation,&hsvValue](){
-      for (size_t i = 0; i < SQUARE_NUMBER_OF_LEDS; i++)
+   
+   std::function<void()> count = [&strips,&hsvSaturation,&hsvValue](){
+      for (auto strip : strips)
       {
-         ledStripSquare.setPixel(i, Bt::Ui::Color::fromHSV(0, hsvSaturation, hsvValue));
-         ledStripSquare.refresh();
-         vTaskDelay(100/portTICK_PERIOD_MS);
-      }
+         for (size_t i = 0; i < strip->numberOfLeds(); i++)
+         {
+            strip->setPixel(i, Bt::Ui::Color::fromHSV(0, hsvSaturation, hsvValue));
+            strip->refresh();
+            vTaskDelay(10/portTICK_PERIOD_MS);
+         }   
+      }  
    };
 
-   std::function<void()> refresh = [&ledStripSquare,&pHueInc,&hsvSaturation,&hsvValue](){
-      for (size_t i = 0; i < SQUARE_NUMBER_OF_LEDS; i++)
+   std::function<void()> refresh = [&strips,&hsvSaturation,&hsvValue](){
+      for (auto strip : strips)
       {
-         ledStripSquare.setPixel(i, Bt::Ui::Color::fromHSV(i*pHueInc, hsvSaturation, hsvValue));
+         uint16_t pHueInc = (std::numeric_limits<uint16_t>::max()/strip->numberOfLeds());
+            
+         for (size_t i = 0; i < strip->numberOfLeds(); i++)
+         {
+            strip->setPixel(i, Bt::Ui::Color::fromHSV(i*pHueInc, hsvSaturation, hsvValue));
+         }
+         strip->refresh();
       }
-      ledStripSquare.refresh();
    };
 
    Bt::Protocols::MqttMessageSubscription mColorValueSubscription(
@@ -121,8 +132,6 @@ void executionContext(void* pContext)
        refresh();   
    });   
    });
-
-   
 
    mainExecutionContext.callPeriodically(10s,[](auto& pTimer){
        ESP_LOGI(TAG, "10s tick");   

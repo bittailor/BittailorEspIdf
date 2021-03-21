@@ -105,7 +105,9 @@
 			"variant": "cpp",
 			"*.ipp": "cpp",
 			"*.inc": "cpp",
-			"queue": "cpp"
+			"queue": "cpp",
+			"forward_list": "cpp",
+			"valarray": "cpp"
 		},
 		"idf.flashType": "UART"
 	}

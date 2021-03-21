@@ -9,26 +9,28 @@
 
 #include <vector>
 
-#include "driver/rmt.h"
+#include <driver/rmt.h>
 
 #include <Bt/Ui/Color.h>
+#include <Bt/Ui/I_LedStrip.h>
 
 namespace Bt {
 namespace Ui {
 
-class LedStrip
+class LedStrip : public I_LedStrip
 {
    public:
-      enum Type {SK6812,WS2812B/*,WS2811*/};
+      enum Type {SK6812,WS2812B,WS2811};
 
       LedStrip(Type pType, gpio_num_t pPin, rmt_channel_t pRtmChannel, size_t pNumberOfLeds);
       LedStrip(const LedStrip&) = delete;
       LedStrip& operator=(const LedStrip&) = delete;
       ~LedStrip();
 
-      void setPixel(size_t pIndex, const Color& pColor);
-      void clear();
-      void refresh();
+      virtual void setPixel(size_t pIndex, const Color& pColor);
+      virtual void clear();
+      virtual void refresh();
+      virtual size_t numberOfLeds() const {return mNumberOfLeds;}
 
    private:
       Type mType;

@@ -25,6 +25,11 @@ namespace {
     constexpr uint32_t WS2812B_T1H_NS = 800;
     constexpr uint32_t WS2812B_T1L_NS = 450;
 
+    constexpr uint32_t WS2811_T0H_NS = 500;
+    constexpr uint32_t WS2811_T0L_NS = 2000;
+    constexpr uint32_t WS2811_T1H_NS = 1200;
+    constexpr uint32_t WS2811_T1L_NS = 1300;
+
     constexpr uint8_t GAMMA_TABLE[256] = {
         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
         0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  1,
@@ -148,11 +153,19 @@ LedStrip::LedStrip(Type pType, gpio_num_t pPin, rmt_channel_t pRtmChannel, size_
             sRmtTimings[pRtmChannel].bit1.duration1 = ratio * WS2812B_T1L_NS;
             sRmtTimings[pRtmChannel].bit1.level1 = 0;  
         }break;
+        case WS2811: {
+            sRmtTimings[pRtmChannel].bit0.duration0 = ratio * WS2811_T0H_NS;
+            sRmtTimings[pRtmChannel].bit0.level0 = 1;
+            sRmtTimings[pRtmChannel].bit0.duration1 = ratio * WS2811_T0L_NS;
+            sRmtTimings[pRtmChannel].bit0.level1 = 0;
+            sRmtTimings[pRtmChannel].bit1.duration0 = ratio * WS2811_T1H_NS;
+            sRmtTimings[pRtmChannel].bit1.level0 = 1;
+            sRmtTimings[pRtmChannel].bit1.duration1 = ratio * WS2811_T1L_NS;
+            sRmtTimings[pRtmChannel].bit1.level1 = 0;  
+        }break;
     }
 
     rmt_translator_init(mConfig.channel, sRmtFunctions[pRtmChannel]);
-
-
 }
 
 LedStrip::~LedStrip() {

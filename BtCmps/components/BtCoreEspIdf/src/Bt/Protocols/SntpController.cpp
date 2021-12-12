@@ -8,8 +8,6 @@
 
 #include <stdexcept>
 
-#include <esp_sntp.h>
-
 #include <Bt/Core/I_Time.h>
 #include <Bt/Events/Events.h>
 

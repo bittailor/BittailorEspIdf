@@ -7,6 +7,8 @@
 #ifndef INC__Bt_Protocols_SntpController__h
 #define INC__Bt_Protocols_SntpController__h
 
+#include <esp_sntp.h>
+
 #include <Bt/Events/I_EventLoop.h>
 #include <Bt/Events/EventLoopSubscription.h>
 
